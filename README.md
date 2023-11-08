@@ -1,7 +1,7 @@
 # Collective Fish Behavior: A Hydrodynamic Interaction Model
 
 ## Team members
-- Jakop Petek ([@Friday202](https://github.com/Friday202))
+- Jakob Petek ([@Friday202](https://github.com/Friday202))
 - Andraž Čeh ([@andrazceh](https://github.com/andrazceh))
 - Matic Šutar ([@AllIAskOfYou](https://github.com/AllIAskOfYou))
 - Gregor Kovač ([@gregorkovac](https://github.com/gregorkovac))
