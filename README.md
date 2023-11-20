@@ -20,6 +20,11 @@ Detailed instructions on how to run the simulation will be provided as the imple
 
 *Note: The README file will be regularly updated to reflect the project's current status and any changes in direction.*
 
+## Milestones
+- [x] [Milestone 1](https://github.com/gregorkovac/collective-fish-behaviour/milestone/1) 
+- [Milestone 2](https://github.com/gregorkovac/collective-fish-behaviour/milestone/2) 
+- [Milestone 3](https://github.com/gregorkovac/collective-fish-behaviour/milestone/3) 
+
 ## References
 <a id="1">[1]</a> 
 Audrey Filella, François Nadal, Clément Sire, Eva Kanso, Christophe Eloy. (May 2018).
