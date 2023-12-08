@@ -2,7 +2,7 @@ import numpy as np
 import time
 import keyboard
 import cv2 as cv
-
+from simulation_properties import *
 from scene_manager import SceneManager
 
 
@@ -12,9 +12,10 @@ class Scene:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.aspect_ratio = self.screen_width / self.screen_height
-
+        self.aquarium_width = AQUARIUM_WIDTH
+        self.aquarium_height = AQUARIUM_HEIGHT
         # Scene manager to update object in the scene
-        self.scene_mng = SceneManager(self.aspect_ratio)
+        self.scene_mng = SceneManager()
 
         # Image used to display simulation results each frame
         self.image_frame = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
@@ -39,10 +40,10 @@ class Scene:
             self.delta_ime = time.time() - self.start_time
 
             # Check if a key is pressed to stop simulation
-            if keyboard.is_pressed('q'):
-                print("Key 'q' pressed. Stopping simulation...")
-                cv.destroyAllWindows()
-                break
+            #if keyboard.is_pressed('q'):
+            #    print("Key 'q' pressed. Stopping simulation...")
+            #    cv.destroyAllWindows()
+            #    break
 
             # Update the scene at desired time step
             if self.delta_ime >= self.desired_time_step:
@@ -67,10 +68,16 @@ class Scene:
         # This is necessary otherwise cv does not display at all
         cv.waitKey(1)
 
-    def draw_on_frame(self, norm_locations):
-        for norm_location in norm_locations:
-            screen_position = norm_location * np.array([self.screen_width, self.screen_height])
-            cv.circle(self.image_frame, tuple(map(int, screen_position)), 5, (0, 255, 0), -1)
+    def draw_on_frame(self, locations):
+        # Scale factor to convert from meters to pixels
+        scale_x = self.screen_width / self.aquarium_width
+        scale_y = self.screen_height / self.aquarium_height
 
+        for location in locations:
+            # Convert real-world location (in meters) to screen coordinates (in pixels)
+            screen_position = location * np.array([scale_x, scale_y])
+
+            # Draw the fish on the screen as circles
+            cv.circle(self.image_frame, tuple(screen_position.astype(int)), 4, (0, 255, 0), -1)
 
 
