@@ -1,6 +1,6 @@
 import numpy as np
 import time
-import keyboard
+# import keyboard
 import cv2 as cv
 from simulation_properties import *
 from scene_manager import SceneManager
@@ -39,7 +39,7 @@ class Scene:
             # Update delta time
             self.delta_time = time.time() - self.start_time
             self.start_time = time.time()
-            print(1/self.delta_time, self.delta_time)
+            # print(1/self.delta_time, self.delta_time)
 
 
             # Check if a key is pressed to stop simulation

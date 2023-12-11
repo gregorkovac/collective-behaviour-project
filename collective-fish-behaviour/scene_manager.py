@@ -69,8 +69,10 @@ class SceneManager:
             U_i = np.zeros(2, dtype=float)  # Initialize as a float array
             Omega_i = 0.0  # Initialize rotational influence
 
+            vor = Voronoi(self.fishes[:, :2])
+
             # Find k-nearest neighbors
-            neighbors = self.find_neighbors(i, K_NN)
+            neighbors = self.find_voronoi_neighbors(i, vor)
 
             e_i_parallel = self.fishes[i, 3:5]  # Current direction of fish i
             e_i_perpendicular = np.array([-e_i_parallel[1], e_i_parallel[0]])  # Perpendicular to e_i_parallel       
@@ -85,17 +87,40 @@ class SceneManager:
                 
                 if rho_ij != 0:
                     e_j_rho = -relative_pos / rho_ij
-                    theta_ji = np.arccos(e_j_rho * e_j_parallel)
-                    theta_ij = np.arccos(-e_j_rho * e_i_parallel)
+                    theta_ji = np.arccos(np.dot(e_j_rho, e_j_parallel))
+                    theta_ij = np.arccos(np.dot(-e_j_rho, e_i_parallel))
+
                     e_j_theta = np.array([-e_j_rho[1], e_j_rho[0]])
                     phi_ij = np.pi - theta_ij - theta_ji
 
                     u_ji = (self.I_f / np.pi) * (e_j_theta * np.sin(theta_ji) + e_j_rho * np.sin(theta_ji)) / (rho_ij ** 2)
                     U_i += u_ji
 
-                    u_ji_gradient = self.calculate_gradient_u_ji(i, j)
-                    Omega_i += np.dot(e_i_parallel, u_ji_gradient) * np.dot(e_i_perpendicular, u_ji_gradient)
+                    # # Get gradient by deriving u_ji
+                    # u_ji_grad = (self.I_f / np.pi) * (e_j_theta * np.cos(theta_ji) + e_j_rho * np.cos(theta_ji)) / (rho_ij ** 2) - (2 * self.I_f / np.pi) * (e_j_theta * np.sin(theta_ji) + e_j_rho * np.sin(theta_ji)) / (rho_ij ** 3)
 
+                    # print(u_ji_grad, u_ji)
+
+                    # u_ji_gradient = self.calculate_gradient_u_ji(i, j)
+
+
+
+                    # Omega_i += np.dot(e_i_parallel, np.cross(u_ji_grad, e_i_perpendicular))
+
+                    # Omega_i += np.dot(np.array([e_i_parallel[0], e_i_parallel[1], 1]), np.cross(np.array([u_ji_grad[0], u_ji_grad[1], 1]), np.array([e_i_perpendicular[0], e_i_perpendicular[1], 1])))
+
+                    # Omega_i += e_i_parallel * u_ji_grad * e_i_perpendicular
+
+                    # Omega_i += u_ji_grad[1] * e_i_perpendicular[0] + u_ji_grad[0] * e_i_parallel[1]
+
+                    Omega_i += np.cross(e_i_perpendicular, u_ji - np.dot(u_ji, e_i_parallel) * e_i_parallel)
+
+                    # print(u_ji)
+
+            Omega_i = 0
+            U_i = np.zeros(2, dtype=float)
+
+            # print(Omega_i)
             """
             for j in neighbors:
                 if i != j:
@@ -127,6 +152,7 @@ class SceneManager:
             current_direction = self.fishes[i, 3:5]
             new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update
 
+
             # Update direction vector based on new orientation
             self.fishes[i, 3] = np.cos(new_orientation)
             self.fishes[i, 4] = np.sin(new_orientation)
@@ -135,8 +161,25 @@ class SceneManager:
             self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time
             self.fishes[i, 1] += self.fishes[i, 2] * (self.fishes[i, 4] + U_i[1]) * delta_time
 
+
             # Check for collisions and update positions
             self.handle_collisions(i)
+
+    def find_voronoi_neighbors(self, fish_index, vor):
+        neighbors = set()
+        point_region = vor.point_region[fish_index]
+        vertices = vor.regions[point_region]
+
+        for vertex in vertices:
+            if vertex >= 0:  # Ignore vertices at infinity
+                # Find which regions/points are adjacent to this vertex
+                for region_index in range(len(vor.point_region)):
+                    if vertex in vor.regions[vor.point_region[region_index]]:
+                        neighbor_index = region_index
+                        if neighbor_index != fish_index and neighbor_index not in neighbors:
+                            neighbors.add(neighbor_index)
+
+        return list(neighbors)
 
     def find_neighbors(self, fish_index, k):
         dists = self.fishes[:, :2] - self.fishes[fish_index, :2]
@@ -170,9 +213,28 @@ class SceneManager:
             relative_pos = self.fishes[neighbor_idx, :2] - self.fishes[fish_index, :2]
             distance = np.linalg.norm(relative_pos)
 
+            e_j_parallel = self.fishes[neighbor_idx, 3:5] 
+            rho_ij = np.linalg.norm(relative_pos)
+
+
             if distance != 0:
-                relative_orientation = np.arctan2(relative_pos[1], relative_pos[0])
+                # relative_orientation = np.arctan2(relative_pos[1], relative_pos[0])
+
+                e_j_rho = -relative_pos / rho_ij
+                relative_orientation = np.arccos(np.dot(e_j_rho,e_j_parallel))
+
+                # print(relative_orientation)
+
                 influence = self.calculate_influence(fish_index, neighbor_idx, distance, relative_orientation)
+
+                # e_i_parallel = self.fishes[fish_index, 3:5]
+                # e_j_rho = -relative_pos / rho_ij
+
+                # theta_ij = np.arccos(np.dot(-e_j_rho, e_i_parallel))
+                # theta_ji = np.arccos(np.dot(e_j_rho, e_j_parallel))
+                # phi_ij = np.pi - theta_ij - theta_ji
+
+                # influence = rho_ij * np.sin(theta_ij) + I_PARALLEL * np.sin(phi_ij)
 
                 # Weight influence by distance or another metric
                 weight = 1 + np.cos(relative_orientation)
@@ -183,7 +245,7 @@ class SceneManager:
             avg_influence /= total_weight
 
         # Add Gaussian-distributed noise
-        noise = np.random.normal(0, self.sigma)
+        noise = np.random.normal(0, self.sigma) * I_N
 
         # Calculate total orientation update
         theta_i_update = avg_influence + noise + Omega_i
