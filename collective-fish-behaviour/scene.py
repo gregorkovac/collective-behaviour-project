@@ -37,7 +37,10 @@ class Scene:
     def simulation_loop(self):
         while True:
             # Update delta time
-            self.delta_ime = time.time() - self.start_time
+            self.delta_time = time.time() - self.start_time
+            self.start_time = time.time()
+            print(1/self.delta_time, self.delta_time)
+
 
             # Check if a key is pressed to stop simulation
             #if keyboard.is_pressed('q'):
@@ -46,9 +49,10 @@ class Scene:
             #    break
 
             # Update the scene at desired time step
-            if self.delta_ime >= self.desired_time_step:
+            if True: #self.delta_time >= self.desired_time_step:
                 # Perform all necessary calculations on the scene
-                self.scene_mng.tick(self.delta_ime)
+                #self.delta_time = 1/60
+                self.scene_mng.tick(self.delta_time)
 
                 # Clear the image
                 self.image_frame.fill(0)
@@ -61,7 +65,7 @@ class Scene:
                 self.display_frame()
 
                 # Finally reset start time for next frame
-                self.start_time = time.time()
+                #self.start_time = time.time()
 
     def display_frame(self):
         cv.imshow("Simulation", self.image_frame)
@@ -76,8 +80,8 @@ class Scene:
         for location in locations:
             # Convert real-world location (in meters) to screen coordinates (in pixels)
             screen_position = location * np.array([scale_x, scale_y])
-
+    
             # Draw the fish on the screen as circles
-            cv.circle(self.image_frame, tuple(screen_position.astype(int)), 4, (0, 255, 0), -1)
+            cv.circle(self.image_frame, tuple(screen_position.astype(int)), 13, (0, 255, 0), -1)
 
 

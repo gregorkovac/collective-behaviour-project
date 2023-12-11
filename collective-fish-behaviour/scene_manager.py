@@ -65,21 +65,38 @@ class SceneManager:
             self.fishes[i, 0] = np.clip(self.fishes[i, 0], 0, self.aquarium_width)
             self.fishes[i, 1] = np.clip(self.fishes[i, 1], 0, self.aquarium_height)
 
-        # Compute Voronoi diagram
-        vor = Voronoi(self.fishes[:, :2])
-
         for i in range(self.num_fish):
             U_i = np.zeros(2, dtype=float)  # Initialize as a float array
             Omega_i = 0.0  # Initialize rotational influence
 
-            neighbors = self.find_voronoi_neighbors(i, vor)
+            # Find k-nearest neighbors
+            neighbors = self.find_neighbors(i, K_NN)
 
             e_i_parallel = self.fishes[i, 3:5]  # Current direction of fish i
-            e_i_perpendicular = np.array([-e_i_parallel[1], e_i_parallel[0]])  # Perpendicular to e_i_parallel
+            e_i_perpendicular = np.array([-e_i_parallel[1], e_i_parallel[0]])  # Perpendicular to e_i_parallel       
 
-            # Check for collisions and update positions
-            self.handle_collisions(i)
+            for j in neighbors:
+                e_j_parallel = self.fishes[j, 3:5]  # Current direction of fish i
+                e_j_perpendicular = np.array([-e_j_parallel[1], e_j_parallel[0]])  # Perpendicular to e_i_parallel  
 
+                # Relative position vector from fish i to fish j
+                relative_pos = self.fishes[j, :2] - self.fishes[i, :2]
+                rho_ij = np.linalg.norm(relative_pos)
+                
+                if rho_ij != 0:
+                    e_j_rho = -relative_pos / rho_ij
+                    theta_ji = np.arccos(e_j_rho * e_j_parallel)
+                    theta_ij = np.arccos(-e_j_rho * e_i_parallel)
+                    e_j_theta = np.array([-e_j_rho[1], e_j_rho[0]])
+                    phi_ij = np.pi - theta_ij - theta_ji
+
+                    u_ji = (self.I_f / np.pi) * (e_j_theta * np.sin(theta_ji) + e_j_rho * np.sin(theta_ji)) / (rho_ij ** 2)
+                    U_i += u_ji
+
+                    u_ji_gradient = self.calculate_gradient_u_ji(i, j)
+                    Omega_i += np.dot(e_i_parallel, u_ji_gradient) * np.dot(e_i_perpendicular, u_ji_gradient)
+
+            """
             for j in neighbors:
                 if i != j:
                     # Relative position vector from fish i to fish j
@@ -102,7 +119,7 @@ class SceneManager:
 
                         u_ji_gradient = self.calculate_gradient_u_ji(i, j)
                         Omega_i += np.dot(e_i_parallel, u_ji_gradient) * np.dot(e_i_perpendicular, u_ji_gradient)
-
+            """
 
             # Compute the orientation update
             theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
@@ -115,22 +132,31 @@ class SceneManager:
             self.fishes[i, 4] = np.sin(new_orientation)
 
             # Update position
-            self.fishes[i, 0] += (self.fishes[i, 2] * self.fishes[i, 3] + U_i[0]) * delta_time
-            self.fishes[i, 1] += (self.fishes[i, 2] * self.fishes[i, 4] + U_i[1]) * delta_time
+            self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time
+            self.fishes[i, 1] += self.fishes[i, 2] * (self.fishes[i, 4] + U_i[1]) * delta_time
 
-    def find_voronoi_neighbors(self, fish_index, vor):
-        neighbors = set()
-        point_region = vor.point_region[fish_index]
-        vertices = vor.regions[point_region]
+            # Check for collisions and update positions
+            self.handle_collisions(i)
 
-        for vertex in vertices:
-            if vertex >= 0:  # Ignore vertices at infinity
-                # Find which regions/points are adjacent to this vertex
-                for region_index in range(len(vor.point_region)):
-                    if vertex in vor.regions[vor.point_region[region_index]]:
-                        neighbor_index = region_index
-                        if neighbor_index != fish_index and neighbor_index not in neighbors:
-                            neighbors.add(neighbor_index)
+    def find_neighbors(self, fish_index, k):
+        dists = self.fishes[:, :2] - self.fishes[fish_index, :2]
+        dists = np.linalg.norm(dists, axis=1)
+        neighbors = np.argsort(dists)[1:k + 1]
+        return list(neighbors)
+
+    #def find_voronoi_neighbors(self, fish_index, vor):
+    #    neighbors = set()
+    #    point_region = vor.point_region[fish_index]
+    #    vertices = vor.regions[point_region]
+#
+    #    for vertex in vertices:
+    #        if vertex >= 0:  # Ignore vertices at infinity
+    #            # Find which regions/points are adjacent to this vertex
+    #            for region_index in range(len(vor.point_region)):
+    #                if vertex in vor.regions[vor.point_region[region_index]]:
+    #                    neighbor_index = region_index
+    #                    if neighbor_index != fish_index and neighbor_index not in neighbors:
+    #                        neighbors.add(neighbor_index)
 
         return list(neighbors)
 
