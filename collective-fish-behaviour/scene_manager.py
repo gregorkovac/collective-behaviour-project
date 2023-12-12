@@ -29,6 +29,8 @@ class SceneManager:
         center_x = self.aquarium_width / 2
         center_y = self.aquarium_height / 2
 
+        np.random.seed(0)
+
         # Generate initial positions within 1/5th of the aquarium's size, centered
         initial_positions = self.generate_random_vectors_2D(self.num_fish,
                                                             center_x - self.aquarium_width / 2,
@@ -182,7 +184,7 @@ class SceneManager:
             # self.cohesion_point = cohesion_force
 
             Omega_i = 0
-            U_i = np.zeros(2, dtype=float)
+            # U_i = np.zeros(2, dtype=float)
 
             if weights_sum > 0:
                 theta_i_inner /= weights_sum
@@ -198,7 +200,6 @@ class SceneManager:
             # if i == 0:
             #     self.main_dir = np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction])
 
-            self.main_dir.append(np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction]))
 
             if np.linalg.norm(separation_force) > 0:
 
@@ -224,6 +225,7 @@ class SceneManager:
             # self.fishes[i, 3] = np.cos(new_orientation)
             # self.fishes[i, 4] = np.sin(new_orientation)
 
+            print(U_i)
 
             # Update position
             self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time
@@ -232,6 +234,8 @@ class SceneManager:
 
             # Check for collisions and update positions
             self.handle_collisions(i)
+
+            self.main_dir.append(np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction]))
 
     def find_voronoi_neighbors(self, fish_index, vor):
         neighbors = set()
