@@ -23,6 +23,7 @@ class SceneManager:
         self.main_dir = []
         self.debug_dir = []
         self.cohesion_point = np.zeros(2, dtype=float)
+        self.flow = []
 
     def initialize(self):
         # Create fishes
@@ -61,6 +62,7 @@ class SceneManager:
         self.debug_lines = []
         self.debug_dir = []
         self.main_dir = []
+        self.flow = []
 
         # Handle edge collisions
         for i in range(self.num_fish):
@@ -133,7 +135,16 @@ class SceneManager:
                     phi_ij = np.pi - theta_ij - theta_ji
 
                     u_ji = (self.I_f / np.pi) * (e_j_theta * np.sin(theta_ji) + e_j_rho * np.sin(theta_ji)) / (rho_ij ** 2)
+                    # if j != 0:
+                    #     u_ji = 0
+
                     U_i += u_ji
+
+
+
+                    if j == 0:
+                        # print(u_ji)
+                        self.flow.append([self.fishes[i, :2], self.fishes[i, :2] + u_ji])
 
                     # # Get gradient by deriving u_ji
                     # u_ji_grad = (self.I_f / np.pi) * (e_j_theta * np.cos(theta_ji) + e_j_rho * np.cos(theta_ji)) / (rho_ij ** 2) - (2 * self.I_f / np.pi) * (e_j_theta * np.sin(theta_ji) + e_j_rho * np.sin(theta_ji)) / (rho_ij ** 3)
@@ -152,7 +163,7 @@ class SceneManager:
 
                     # Omega_i += u_ji_grad[1] * e_i_perpendicular[0] + u_ji_grad[0] * e_i_parallel[1]
 
-                    Omega_i += np.cross(e_i_perpendicular, u_ji - np.dot(u_ji, e_i_parallel) * e_i_parallel)
+                    # Omega_i += np.cross(e_i_perpendicular, u_ji - np.dot(u_ji, e_i_parallel) * e_i_parallel)
 
                     weight = 1 + np.cos(theta_ij)
                     # theta_i_inner += (rho_ij * np.sin(theta_ij) + I_PARALLEL * np.sin(phi_ij)) * weight
@@ -186,17 +197,6 @@ class SceneManager:
             Omega_i = 0
             # U_i = np.zeros(2, dtype=float)
 
-            if weights_sum > 0:
-                theta_i_inner /= weights_sum
-
-            # Compute the orientation update
-            theta_i_update = theta_i_inner + Omega_i + I_N * np.random.normal(0, SIGMA)
-
-            # theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
-            # Update the orientation of fish i
-            current_direction = self.fishes[i, 3:5]
-            new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update * delta_time
-
             # if i == 0:
             #     self.main_dir = np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction])
 
@@ -211,21 +211,33 @@ class SceneManager:
 
                 cohesion_force = (cohesion_force - self.fishes[i, :2]) * K_C
 
-
-
-                # self.debug_dir = separation_force
-
                 self.fishes[i, 3] += separation_force[0] + alignment_force[0] + cohesion_force[0]
                 self.fishes[i, 4] += separation_force[1] + alignment_force[1] + cohesion_force[1]
 
                 self.fishes[i, 3:5] /= np.linalg.norm(self.fishes[i, 3:5])
+
+                if weights_sum > 0:
+                        theta_i_inner /= weights_sum
+
+                # Compute the orientation update
+                theta_i_update = theta_i_inner + Omega_i + I_N * np.random.normal(0, SIGMA)
+                # theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
+                # Update the orientation of fish i
+                current_direction = self.fishes[i, 3:5]
+                # new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update * delta_time
+
+                # self.fishes[i, 3] = np.cos(new_orientation)
+                # self.fishes[i, 4] = np.sin(new_orientation)    
+
+                # self.debug_dir = separation_force
+
 
 
             # Update direction vector based on new orientation
             # self.fishes[i, 3] = np.cos(new_orientation)
             # self.fishes[i, 4] = np.sin(new_orientation)
 
-            print(U_i)
+            # print(U_i)
 
             # Update position
             self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time

@@ -12,9 +12,9 @@ NUM_FISH = 20
 INITIAL_SPEED = 6.5  # in m/s
 
 # Parameters for hydrodynamic interactions
-K_P = 100 # Attraction factor
-K_V = 0.1 # Alignment factor
-K_S = 0.2 # Separation factor
+K_P = 10 # Attraction factor
+K_V = 0.4 # Alignment factor
+K_S = 0.1 # Separation factor
 K_C = 0.1 # Cohesion factor
 SIGMA = 0.1 # Gaussian-distributed rotational noise
 K_NN = 2 # k nearest neighbours

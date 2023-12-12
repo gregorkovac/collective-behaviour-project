@@ -90,12 +90,19 @@ class Scene:
         scale_x = self.screen_width / self.aquarium_width
         scale_y = self.screen_height / self.aquarium_height
 
+        first = True
         for location in locations:
             # Convert real-world location (in meters) to screen coordinates (in pixels)
             screen_position = location * np.array([scale_x, scale_y])
 
+            if first == True:
+                c = (0, 0, 255)
+                first = False
+            else:
+                c = (0, 255, 0)
+
             # Draw the fish on the screen as circles
-            cv.circle(self.image_frame, tuple(screen_position.astype(int)), 13, (0, 255, 0), -1)
+            cv.circle(self.image_frame, tuple(screen_position.astype(int)), 13, c, -1)
 
 
         # for l in self.scene_mng.debug_lines:
@@ -103,10 +110,24 @@ class Scene:
 
         #     cv.line(self.image_frame, tuple(line[0].astype(int)), tuple(line[1].astype(int)), (0, 0, 255), 1)
 
+        first = True
         for d in self.scene_mng.main_dir:
+            if first == True:
+                c = (0, 0, 255)
+                first = False
+            else:
+                c = (0, 255, 0)
+
             main_dir_vec = d * np.array([scale_x, scale_y])
 
-            cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), (0, 255, 0), 2)
+            cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), c, 2)
+
+        for f in self.scene_mng.flow:
+            # print(f)
+
+            flow_vec = f * np.array([scale_x, scale_y])
+
+            cv.arrowedLine(self.image_frame, flow_vec[0].astype(int), flow_vec[1].astype(int), (0, 0, 255), 2)
 
         # cohesion_point = self.scene_mng.cohesion_point * np.array([scale_x, scale_y])
 
