@@ -20,11 +20,24 @@ class Scene:
         # Image used to display simulation results each frame
         self.image_frame = np.zeros((self.screen_height, self.screen_width, 3), dtype=np.uint8)
 
+        # cv.namedWindow("Simulation", cv.WINDOW_NORMAL)
+        # cv.imshow("Simulation", self.image_frame)
+
+        # cv.createTrackbar("K_P", "Simulation", 0, 100, self.set_k_p)
+        # cv.createTrackbar("K_V", "Simulation", 0, 100, self.set_k_v)
+
+
         # Time frame variables
         self.frame_rate = frame_rate
         self.desired_time_step = 1 / self.frame_rate
         self.start_time = 0.0
         self.delta_ime = 0.0
+
+    # def set_k_p(self, value):
+    #     self.scene_mng.k_p = value / 10.0
+
+    # def set_k_v(self, value):
+    #     self.scene_mng.k_v = value / 10.0
 
     def start_simulation(self):
         # Perform any initialization before main loop
@@ -80,8 +93,26 @@ class Scene:
         for location in locations:
             # Convert real-world location (in meters) to screen coordinates (in pixels)
             screen_position = location * np.array([scale_x, scale_y])
-    
+
             # Draw the fish on the screen as circles
             cv.circle(self.image_frame, tuple(screen_position.astype(int)), 13, (0, 255, 0), -1)
+
+
+        for l in self.scene_mng.debug_lines:
+            line = l * np.array([scale_x, scale_y])
+
+            cv.line(self.image_frame, tuple(line[0].astype(int)), tuple(line[1].astype(int)), (0, 0, 255), 1)
+
+        main_dir_vec = self.scene_mng.main_dir * np.array([scale_x, scale_y])
+        cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), (0, 255, 0), 2)
+
+        for v in self.scene_mng.debug_dir:
+            vec = v * np.array([scale_x, scale_y])
+
+            print(vec)
+            print("\n")
+
+            cv.arrowedLine(self.image_frame, vec[0].astype(int), vec[1].astype(int), (255, 255, 255), 2)
+
 
 

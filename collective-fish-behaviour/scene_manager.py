@@ -19,6 +19,10 @@ class SceneManager:
         self.S = S  # Surface area assuming fish is a circle with radius r_0/2
         self.I_f=I_F # Dipole intensity
 
+        self.debug_lines = []
+        self.main_dir = np.array([0, 0])
+        self.debug_dir = []
+
     def initialize(self):
         # Create fishes
         center_x = self.aquarium_width / 2
@@ -26,10 +30,10 @@ class SceneManager:
 
         # Generate initial positions within 1/5th of the aquarium's size, centered
         initial_positions = self.generate_random_vectors_2D(self.num_fish,
-                                                            center_x - self.aquarium_width / 10,
-                                                            center_x + self.aquarium_width / 10,
-                                                            center_y - self.aquarium_height / 10,
-                                                            center_y + self.aquarium_height / 10)
+                                                            center_x - self.aquarium_width / 2,
+                                                            center_x + self.aquarium_width / 2,
+                                                            center_y - self.aquarium_height / 2,
+                                                            center_y + self.aquarium_height / 2)
 
         self.fishes[:, :2] = initial_positions
         self.fishes[:, 2] = INITIAL_SPEED
@@ -51,6 +55,9 @@ class SceneManager:
         # self.fishes[:, 0] += self.fishes[:, 2] * self.fishes[:, 3] * delta_time
         # self.fishes[:, 1] += self.fishes[:, 2] * self.fishes[:, 4] * delta_time
 
+        self.debug_lines = []
+        self.debug_dir = []
+
         # Handle edge collisions
         for i in range(self.num_fish):
             # Check for collision with horizontal boundaries
@@ -69,23 +76,35 @@ class SceneManager:
             U_i = np.zeros(2, dtype=float)  # Initialize as a float array
             Omega_i = 0.0  # Initialize rotational influence
 
-            vor = Voronoi(self.fishes[:, :2])
+            # vor = Voronoi(self.fishes[:, :2])
 
             # Find k-nearest neighbors
-            neighbors = self.find_voronoi_neighbors(i, vor)
+            neighbors = self.find_neighbors(i, K_NN)
+            # neighbors = self.find_voronoi_neighbors(i, vor)
 
             e_i_parallel = self.fishes[i, 3:5]  # Current direction of fish i
             e_i_perpendicular = np.array([-e_i_parallel[1], e_i_parallel[0]])  # Perpendicular to e_i_parallel       
 
-            for j in neighbors:
+            theta_i_inner = 0
+            weights_sum = 0
+
+            separation_force = np.zeros(2, dtype=float)
+
+            for j in range(self.num_fish):
+                if i == j:
+                    continue
+
                 e_j_parallel = self.fishes[j, 3:5]  # Current direction of fish i
                 e_j_perpendicular = np.array([-e_j_parallel[1], e_j_parallel[0]])  # Perpendicular to e_i_parallel  
 
                 # Relative position vector from fish i to fish j
                 relative_pos = self.fishes[j, :2] - self.fishes[i, :2]
                 rho_ij = np.linalg.norm(relative_pos)
-                
-                if rho_ij != 0:
+
+                if rho_ij != 0 and rho_ij < 2:
+                    if i == 0:
+                        self.debug_lines.append([self.fishes[i, :2], self.fishes[j, :2]])
+
                     e_j_rho = -relative_pos / rho_ij
                     theta_ji = np.arccos(np.dot(e_j_rho, e_j_parallel))
                     theta_ij = np.arccos(np.dot(-e_j_rho, e_i_parallel))
@@ -114,6 +133,22 @@ class SceneManager:
                     # Omega_i += u_ji_grad[1] * e_i_perpendicular[0] + u_ji_grad[0] * e_i_parallel[1]
 
                     Omega_i += np.cross(e_i_perpendicular, u_ji - np.dot(u_ji, e_i_parallel) * e_i_parallel)
+
+                    weight = 1 + np.cos(theta_ij)
+                    # theta_i_inner += (rho_ij * np.sin(theta_ij) + I_PARALLEL * np.sin(phi_ij)) * weight
+                    theta_i_inner += (self.k_p * rho_ij * np.sin(theta_ij) + self.k_v * INITIAL_SPEED * np.sin(phi_ij)) * weight
+
+                    # theta_i_inner = (self.k_p * theta_ij - self.k_v * phi_ij) * weight
+                    weights_sum += weight
+
+                    # ratio = np.clip(1 - rho_ij / self.r_0, 0, 1)
+
+                    # separation_force += ratio * e_j_rho
+
+                    if i == 0:
+                        self.debug_dir.append(np.array([self.fishes[i, :2], self.fishes[i, :2] - (self.fishes[j, :2] - self.fishes[i, :2]) / rho_ij]))
+
+                    separation_force -= (self.fishes[j, :2] - self.fishes[i, :2]) / rho_ij
 
                     # print(u_ji)
 
@@ -146,16 +181,36 @@ class SceneManager:
                         Omega_i += np.dot(e_i_parallel, u_ji_gradient) * np.dot(e_i_perpendicular, u_ji_gradient)
             """
 
+            if weights_sum > 0:
+                theta_i_inner /= weights_sum
+
             # Compute the orientation update
-            theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
+            theta_i_update = theta_i_inner + Omega_i + I_N * np.random.normal(0, SIGMA)
+
+            # theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
             # Update the orientation of fish i
             current_direction = self.fishes[i, 3:5]
-            new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update
+            new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update * delta_time
+
+            if i == 0:
+                self.main_dir = np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction])
+
+            if np.linalg.norm(separation_force) > 0:
+
+                separation_force = separation_force / np.linalg.norm(separation_force)
+
+                # self.debug_dir = separation_force
+
+                self.fishes[i, 3] += separation_force[0]
+                self.fishes[i, 4] += separation_force[1]
+
+                self.fishes[i, 3:5] /= np.linalg.norm(self.fishes[i, 3:5])
 
 
             # Update direction vector based on new orientation
-            self.fishes[i, 3] = np.cos(new_orientation)
-            self.fishes[i, 4] = np.sin(new_orientation)
+            # self.fishes[i, 3] = np.cos(new_orientation)
+            # self.fishes[i, 4] = np.sin(new_orientation)
+
 
             # Update position
             self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time
@@ -221,14 +276,14 @@ class SceneManager:
                 # relative_orientation = np.arctan2(relative_pos[1], relative_pos[0])
 
                 e_j_rho = -relative_pos / rho_ij
-                relative_orientation = np.arccos(np.dot(e_j_rho,e_j_parallel))
+                e_i_parallel = self.fishes[fish_index, 3:5]
+                relative_orientation = np.arccos(np.dot(-e_j_rho, e_i_parallel))
 
                 # print(relative_orientation)
 
                 influence = self.calculate_influence(fish_index, neighbor_idx, distance, relative_orientation)
 
-                # e_i_parallel = self.fishes[fish_index, 3:5]
-                # e_j_rho = -relative_pos / rho_ij
+                # # e_j_rho = -relative_pos / rho_ij
 
                 # theta_ij = np.arccos(np.dot(-e_j_rho, e_i_parallel))
                 # theta_ji = np.arccos(np.dot(e_j_rho, e_j_parallel))
@@ -237,6 +292,7 @@ class SceneManager:
                 # influence = rho_ij * np.sin(theta_ij) + I_PARALLEL * np.sin(phi_ij)
 
                 # Weight influence by distance or another metric
+                # weight = 1 + np.cos(relative_orientation)
                 weight = 1 + np.cos(relative_orientation)
                 avg_influence += influence * weight
                 total_weight += weight
