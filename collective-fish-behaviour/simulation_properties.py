@@ -6,14 +6,16 @@ SCREEN_HEIGHT = 1000
 FRAME_RATE = 60
 
 # Scene manager properties
-NUM_FISH = 30
+NUM_FISH = 20
 
 # Fish properties
-INITIAL_SPEED = 2  # in m/s
+INITIAL_SPEED = 6.5  # in m/s
 
 # Parameters for hydrodynamic interactions
 K_P = 0.000001 # Attraction factor
-K_V = 1 # Alignment factor
+K_V = 0.6 # Alignment factor
+K_S = 0.1 # Separation factor
+K_C = 0.1 # Cohesion factor
 SIGMA = 0.1 # Gaussian-distributed rotational noise
 K_NN = 2 # k nearest neighbours
 

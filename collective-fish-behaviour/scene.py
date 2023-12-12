@@ -98,21 +98,32 @@ class Scene:
             cv.circle(self.image_frame, tuple(screen_position.astype(int)), 13, (0, 255, 0), -1)
 
 
-        for l in self.scene_mng.debug_lines:
-            line = l * np.array([scale_x, scale_y])
+        # for l in self.scene_mng.debug_lines:
+        #     line = l * np.array([scale_x, scale_y])
 
-            cv.line(self.image_frame, tuple(line[0].astype(int)), tuple(line[1].astype(int)), (0, 0, 255), 1)
+        #     cv.line(self.image_frame, tuple(line[0].astype(int)), tuple(line[1].astype(int)), (0, 0, 255), 1)
 
-        main_dir_vec = self.scene_mng.main_dir * np.array([scale_x, scale_y])
-        cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), (0, 255, 0), 2)
+        for d in self.scene_mng.main_dir:
+            main_dir_vec = d * np.array([scale_x, scale_y])
 
-        for v in self.scene_mng.debug_dir:
-            vec = v * np.array([scale_x, scale_y])
+            cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), (0, 255, 0), 2)
 
-            print(vec)
-            print("\n")
+        # cohesion_point = self.scene_mng.cohesion_point * np.array([scale_x, scale_y])
 
-            cv.arrowedLine(self.image_frame, vec[0].astype(int), vec[1].astype(int), (255, 255, 255), 2)
+        # # print(self.scene_mng.cohesion_point)
+
+        # cv.circle(self.image_frame, tuple(cohesion_point.astype(int)), 13, (0, 0, 255), -1)
+
+        # main_dir_vec = self.scene_mng.main_dir * np.array([scale_x, scale_y])
+        # cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), (0, 255, 0), 2)
+
+        # for v in self.scene_mng.debug_dir:
+        #     vec = v * np.array([scale_x, scale_y])
+
+        #     print(vec)
+        #     print("\n")
+
+        #     cv.arrowedLine(self.image_frame, vec[0].astype(int), vec[1].astype(int), (255, 255, 255), 2)
 
 
 

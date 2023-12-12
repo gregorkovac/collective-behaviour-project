@@ -20,8 +20,9 @@ class SceneManager:
         self.I_f=I_F # Dipole intensity
 
         self.debug_lines = []
-        self.main_dir = np.array([0, 0])
+        self.main_dir = []
         self.debug_dir = []
+        self.cohesion_point = np.zeros(2, dtype=float)
 
     def initialize(self):
         # Create fishes
@@ -57,6 +58,7 @@ class SceneManager:
 
         self.debug_lines = []
         self.debug_dir = []
+        self.main_dir = []
 
         # Handle edge collisions
         for i in range(self.num_fish):
@@ -71,6 +73,18 @@ class SceneManager:
             # Ensure the position stays within bounds
             self.fishes[i, 0] = np.clip(self.fishes[i, 0], 0, self.aquarium_width)
             self.fishes[i, 1] = np.clip(self.fishes[i, 1], 0, self.aquarium_height)
+
+            # if self.fishes[i, 0] < 0:
+            #     self.fishes[i, 0] = self.aquarium_width - np.abs(self.fishes[i, 0])
+
+            # if self.fishes[i, 0] > self.aquarium_width:
+            #     self.fishes[i, 0] = self.fishes[i, 0] - self.aquarium_width
+
+            # if self.fishes[i, 1] < 0:
+            #     self.fishes[i, 1] = self.aquarium_height - np.abs(self.fishes[i, 1])
+
+            # if self.fishes[i, 1] > self.aquarium_height:
+            #     self.fishes[i, 1] = self.fishes[i, 1] - self.aquarium_height
 
         for i in range(self.num_fish):
             U_i = np.zeros(2, dtype=float)  # Initialize as a float array
@@ -89,6 +103,10 @@ class SceneManager:
             weights_sum = 0
 
             separation_force = np.zeros(2, dtype=float)
+            alignment_force = np.zeros(2, dtype=float)
+            cohesion_force = np.zeros(2, dtype=float)
+
+            neighbour_cnt = 0
 
             for j in range(self.num_fish):
                 if i == j:
@@ -101,7 +119,7 @@ class SceneManager:
                 relative_pos = self.fishes[j, :2] - self.fishes[i, :2]
                 rho_ij = np.linalg.norm(relative_pos)
 
-                if rho_ij != 0 and rho_ij < 2:
+                if rho_ij != 0 and rho_ij < 10:
                     if i == 0:
                         self.debug_lines.append([self.fishes[i, :2], self.fishes[j, :2]])
 
@@ -149,37 +167,22 @@ class SceneManager:
                         self.debug_dir.append(np.array([self.fishes[i, :2], self.fishes[i, :2] - (self.fishes[j, :2] - self.fishes[i, :2]) / rho_ij]))
 
                     separation_force -= (self.fishes[j, :2] - self.fishes[i, :2]) / rho_ij
+                    alignment_force += e_j_parallel
+
+                    cohesion_force += self.fishes[j, :2] 
+
+                    neighbour_cnt += 1
 
                     # print(u_ji)
+            
+            alignment_force /= neighbour_cnt
+
+            cohesion_force /= neighbour_cnt
+
+            # self.cohesion_point = cohesion_force
 
             Omega_i = 0
             U_i = np.zeros(2, dtype=float)
-
-            # print(Omega_i)
-            """
-            for j in neighbors:
-                if i != j:
-                    # Relative position vector from fish i to fish j
-                    relative_pos = self.fishes[j, :2] - self.fishes[i, :2]
-                    rho_ij = np.linalg.norm(relative_pos)
-
-                    if rho_ij != 0:
-                        # Convert to polar coordinates
-                        theta_ji = np.arctan2(relative_pos[1], relative_pos[0])
-                        rho_ji = rho_ij
-
-
-                        # Compute u_ji
-                        e_j_theta = np.array([np.cos(theta_ji), np.sin(theta_ji)])  # Direction vector of fish j
-                        u_ji = self.I_f / np.pi * (
-                                e_j_theta * np.sin(theta_ji) + np.array([-np.sin(rho_ji), np.cos(rho_ji)]) * np.sin(
-                            rho_ji)) / rho_ij ** 2
-
-                        U_i += u_ji
-
-                        u_ji_gradient = self.calculate_gradient_u_ji(i, j)
-                        Omega_i += np.dot(e_i_parallel, u_ji_gradient) * np.dot(e_i_perpendicular, u_ji_gradient)
-            """
 
             if weights_sum > 0:
                 theta_i_inner /= weights_sum
@@ -192,17 +195,27 @@ class SceneManager:
             current_direction = self.fishes[i, 3:5]
             new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update * delta_time
 
-            if i == 0:
-                self.main_dir = np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction])
+            # if i == 0:
+            #     self.main_dir = np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction])
+
+            self.main_dir.append(np.array([self.fishes[i, :2], self.fishes[i, :2] + current_direction]))
 
             if np.linalg.norm(separation_force) > 0:
 
-                separation_force = separation_force / np.linalg.norm(separation_force)
+                separation_force = separation_force / np.linalg.norm(separation_force) * K_S
+                alignment_force = (alignment_force - self.fishes[i,3:5]) * K_V
+
+                if i == 0:
+                    self.cohesion_point = cohesion_force
+
+                cohesion_force = (cohesion_force - self.fishes[i, :2]) * K_C
+
+
 
                 # self.debug_dir = separation_force
 
-                self.fishes[i, 3] += separation_force[0]
-                self.fishes[i, 4] += separation_force[1]
+                self.fishes[i, 3] += separation_force[0] + alignment_force[0] + cohesion_force[0]
+                self.fishes[i, 4] += separation_force[1] + alignment_force[1] + cohesion_force[1]
 
                 self.fishes[i, 3:5] /= np.linalg.norm(self.fishes[i, 3:5])
 
