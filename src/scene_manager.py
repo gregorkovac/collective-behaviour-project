@@ -66,29 +66,18 @@ class SceneManager:
 
         # Handle edge collisions
         for i in range(self.num_fish):
-            # Check for collision with horizontal boundaries
-            if self.fishes[i, 0] <= 0 or self.fishes[i, 0] >= self.aquarium_width:
-                self.fishes[i, 3] *= -1  # Reverse horizontal direction
+            # If fish is outside the aquarium, teleport it to the other side
+            if self.fishes[i, 0] < 0:
+                self.fishes[i, 0] = self.aquarium_width
+            elif self.fishes[i, 0] > self.aquarium_width:
+                self.fishes[i, 0] = 0
 
-            # Check for collision with vertical boundaries
-            if self.fishes[i, 1] <= 0 or self.fishes[i, 1] >= self.aquarium_height:
-                self.fishes[i, 4] *= -1  # Reverse vertical direction
+            if self.fishes[i, 1] < 0:
+                self.fishes[i, 1] = self.aquarium_height
+            elif self.fishes[i, 1] > self.aquarium_height:
+                self.fishes[i, 1] = 0
 
-            # Ensure the position stays within bounds
-            self.fishes[i, 0] = np.clip(self.fishes[i, 0], 0, self.aquarium_width)
-            self.fishes[i, 1] = np.clip(self.fishes[i, 1], 0, self.aquarium_height)
-
-            # if self.fishes[i, 0] < 0:
-            #     self.fishes[i, 0] = self.aquarium_width - np.abs(self.fishes[i, 0])
-
-            # if self.fishes[i, 0] > self.aquarium_width:
-            #     self.fishes[i, 0] = self.fishes[i, 0] - self.aquarium_width
-
-            # if self.fishes[i, 1] < 0:
-            #     self.fishes[i, 1] = self.aquarium_height - np.abs(self.fishes[i, 1])
-
-            # if self.fishes[i, 1] > self.aquarium_height:
-            #     self.fishes[i, 1] = self.fishes[i, 1] - self.aquarium_height
+                
 
         for i in range(self.num_fish):
             U_i = np.zeros(2, dtype=float)  # Initialize as a float array
@@ -220,10 +209,18 @@ class SceneManager:
                         theta_i_inner /= weights_sum
 
                 # Compute the orientation update
-                theta_i_update = theta_i_inner + Omega_i + I_N * np.random.normal(0, SIGMA)
+                # theta_i_update = theta_i_inner + Omega_i + I_N * np.random.normal(0, SIGMA)
+
                 # theta_i_update = self.calculate_orientation_update(i, neighbors, Omega_i)
                 # Update the orientation of fish i
                 current_direction = self.fishes[i, 3:5]
+
+                current_orientation = np.arctan2(current_direction[1], current_direction[0])
+                # current_orientation += np.random.normal(0, SIGMA) * I_N
+
+                # self.fishes[i, 3] = np.cos(current_orientation)
+                # self.fishes[i, 4] = np.sin(current_orientation)
+
                 # new_orientation = np.arctan2(current_direction[1], current_direction[0]) + theta_i_update * delta_time
 
                 # self.fishes[i, 3] = np.cos(new_orientation)
@@ -238,6 +235,7 @@ class SceneManager:
             # self.fishes[i, 4] = np.sin(new_orientation)
 
             # print(U_i)
+        
 
             # Update position
             self.fishes[i, 0] += self.fishes[i, 2] * (self.fishes[i, 3] + U_i[0]) * delta_time

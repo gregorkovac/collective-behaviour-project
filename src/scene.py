@@ -85,6 +85,13 @@ class Scene:
         # This is necessary otherwise cv does not display at all
         cv.waitKey(1)
 
+    def valid_screen_position(self, screen_position):
+
+        if screen_position[0] < 0 or screen_position[0] > self.screen_width or screen_position[1] < 0 or screen_position[1] > self.screen_height or np.isnan(screen_position[0]) or np.isnan(screen_position[1]):
+            return False
+        else:
+            return True
+
     def draw_on_frame(self, locations):
         # Scale factor to convert from meters to pixels
         scale_x = self.screen_width / self.aquarium_width
@@ -94,6 +101,9 @@ class Scene:
         for location in locations:
             # Convert real-world location (in meters) to screen coordinates (in pixels)
             screen_position = location * np.array([scale_x, scale_y])
+
+            if not self.valid_screen_position(screen_position):
+                continue
 
             if first == True:
                 c = (0, 0, 255)
@@ -112,13 +122,17 @@ class Scene:
 
         first = True
         for d in self.scene_mng.main_dir:
+            main_dir_vec = d * np.array([scale_x, scale_y])
+
+            if not self.valid_screen_position(main_dir_vec[0]) or not self.valid_screen_position(main_dir_vec[1]):
+                continue
+
             if first == True:
                 c = (0, 0, 255)
                 first = False
             else:
                 c = (0, 255, 0)
 
-            main_dir_vec = d * np.array([scale_x, scale_y])
 
             cv.arrowedLine(self.image_frame, main_dir_vec[0].astype(int), main_dir_vec[1].astype(int), c, 2)
 
@@ -126,6 +140,9 @@ class Scene:
             # print(f)
 
             flow_vec = f * np.array([scale_x, scale_y])
+
+            if not self.valid_screen_position(flow_vec[0]) or not self.valid_screen_position(flow_vec[1]):
+                continue
 
             cv.arrowedLine(self.image_frame, flow_vec[0].astype(int), flow_vec[1].astype(int), (0, 0, 255), 2)
 
