@@ -23,10 +23,16 @@ class Simulation:
         separation = self.separation(params.k_s, params.separation_distance)
 
         # consider alignment factor for direction
-        alignment = self.alignment(params.k_v, params.alignment_distance)
+        alignment = self.alignment(params.k_a, params.alignment_distance)
 
         # consider cohesion factor for direction
         cohesion = self.cohesion(params.k_c, params.cohesion_distance)
+        
+        # consider flow factor for direction
+        flow = self.flow(params.vel, params.k_v, params.k_p, params.flow_distance)
+
+        # consider flow offset factor for direction
+        flow_offset = self.flow_offset(params)
 
         # sum all factors
         if len(separation) > 0:
@@ -35,12 +41,17 @@ class Simulation:
             self.dir[:len(alignment)] += alignment * deltaTime
         if len(cohesion) > 0:
             self.dir[:len(cohesion)] += cohesion * deltaTime
+        #if len(flow) > 0:
+        #    alpha = self.dir2ang(self.dir[flow[1]])
+        #    alpha += -params.vel * flow[0] * deltaTime
+        #    self.dir[flow[1]] = self.ang2dir(alpha)
         
+
         # normalize new direction
         self.dir /= np.linalg.norm(self.dir, axis=1)[:, np.newaxis]
 
         # Update position based on new direction and constant speed
-        self.pos = self.pos + self.dir * params.vel * deltaTime
+        self.pos = self.pos + (self.dir + flow_offset) * params.vel * deltaTime
 
         match params.borders:
             # Wrap around the aquarium
@@ -69,11 +80,58 @@ class Simulation:
 
         return Response(self.pos, self.dir)
     
-    def flow(self, k_p, f_d):
+    def flow_offset(self, params):
+        idx = np.argwhere(self.dists < params.flow_distance)
+        idx = idx[idx[:, 0] != idx[:, 1]]
+        if len(idx) > 0:
+            e_ji = self.pos[idx[:, 0]] - self.pos[idx[:, 1]]
+            dist = np.linalg.norm(e_ji, axis=1)
+            dist = np.where(dist > 0, dist, 1)
+            e_ji /= dist[:, np.newaxis]
+
+            e_j = self.dir[idx[:, 1]]
+
+            theta_ji = np.arccos((e_ji * e_j).sum(axis=1))
+
+            u = e_j * np.sin(theta_ji)[:, np.newaxis] + e_ji * np.cos(theta_ji)[:, np.newaxis]
+            u = u / (dist**2)[:, np.newaxis]
+            u_x = np.bincount(idx[:, 0], weights=u[:, 0])
+            u_y = np.bincount(idx[:, 0], weights=u[:, 1])
+            U = np.column_stack((u_x, u_y))
+            if len(U) < SP.num_fish:
+                print(U)
+                print(np.zeros((SP.num_fish - len(U), 2)))
+                U = np.concatenate((U, np.zeros((SP.num_fish - len(U), 2))))
+            factor = SP.fish_radius**2 * params.k_p / params.vel
+            return U * factor
+    
+    def flow(self, v, k_v, k_p, f_d):
         idx = np.argwhere(self.dists < f_d)
         idx = idx[idx[:, 0] != idx[:, 1]]
         if len(idx) > 0:
-            pass
+            e_ji = self.pos[idx[:, 0]] - self.pos[idx[:, 1]]
+            dist = np.linalg.norm(e_ji, axis=1)
+            dist = np.where(dist > 0, dist, 1)
+            e_ji /= dist[:, np.newaxis]
+
+            e_i = self.dir[idx[:, 0]]
+            e_j = self.dir[idx[:, 1]]
+
+            theta_ij = np.arccos((-e_ji * e_i).sum(axis=1))
+            theta_ji = np.arccos((e_ji * e_j).sum(axis=1))
+
+            phi_ij = np.pi - theta_ij - theta_ji
+            #phi_ij = np.arccos((e_i * e_j).sum(axis=1))
+
+            w = k_v * v * np.sin(phi_ij) + k_p * dist * np.sin(theta_ij)
+
+            w = np.bincount(idx[:, 0], weights=w)
+            count = np.bincount(idx[:, 0])
+            count = np.where(count > 0, count, 1)
+            w /= count
+            idx2 = np.where(w > 0)
+            return (self.dir2ang(self.dir[idx2]) - w[idx2], idx2)
+        return []
     
     def separation(self, k_s, s_d):
         idx = np.argwhere(self.dists < s_d)
@@ -89,7 +147,7 @@ class Simulation:
             return dir * k_s
         return []
     
-    def alignment(self, k_v, a_d):
+    def alignment(self, k_a, a_d):
         idx = np.argwhere(self.dists < a_d)
         idx = idx[idx[:, 0] != idx[:, 1]]
         if len(idx) > 0:
@@ -98,7 +156,7 @@ class Simulation:
             count = np.bincount(idx[:, 0])
             count = np.where(count > 0, count, 1)
             dir = np.column_stack((dir_x / count, dir_y / count))
-            return (dir - self.dir[:len(dir)]) * k_v
+            return (dir - self.dir[:len(dir)]) * k_a
         return []
     
     def cohesion(self, k_c, c_d):

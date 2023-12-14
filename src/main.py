@@ -18,6 +18,7 @@ class Engine:
     def main_loop(self):
         deltaTime = time.time() - self.previous_frame_time
         self.previous_frame_time = time.time()
+        #deltaTime *= 10
 
         params = self.gui.get_dynamic_parameters()
         res = self.simulation.simulate(deltaTime, params)

@@ -1,14 +1,15 @@
 class StaticParameters:
     pixels_per_meter = 33
     aquarium_size = [30, 30]
-    num_fish = 200
-    fish_radius = 0.2
+    num_fish = 50
+    fish_radius = 0.4
 
 class DynamicParameters:
     def __init__(self,
     k_s,
-    k_v,
+    k_a,
     k_c,
+    k_v,
     k_p,
     vel,
     collisions,
@@ -18,8 +19,9 @@ class DynamicParameters:
     cohesion_distance,
     flow_distance):
         self.k_s = k_s
-        self.k_v = k_v
+        self.k_a = k_a
         self.k_c = k_c
+        self.k_v = k_v
         self.k_p = k_p
         self.vel = vel
         self.collisions = collisions
@@ -31,10 +33,11 @@ class DynamicParameters:
 
 SP = StaticParameters()
 DP = DynamicParameters(
-    k_s = 0.1,
-    k_v = 0.01,
+    k_s = 0,
+    k_a = 0,
     k_c = 0,
-    k_p = 10,
+    k_v = 2.7,
+    k_p = 0.41,
     vel = 1,
     collisions = True,
     borders="loop",

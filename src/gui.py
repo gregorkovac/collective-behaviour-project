@@ -45,9 +45,9 @@ class GUI:
                 max_value=10.0
             )
             dpg.add_slider_float(
-                label="k_v",
-                tag="k_v",
-                default_value=DP.k_v,
+                label="k_a",
+                tag="k_a",
+                default_value=DP.k_a,
                 min_value=0.0,
                 max_value=10.0
             )
@@ -55,6 +55,13 @@ class GUI:
                 label="k_c",
                 tag="k_c",
                 default_value=DP.k_c,
+                min_value=0.0,
+                max_value=10.0
+            )
+            dpg.add_slider_float(
+                label="k_v",
+                tag="k_v",
+                default_value=DP.k_p,
                 min_value=0.0,
                 max_value=10.0
             )
@@ -117,8 +124,9 @@ class GUI:
     def get_dynamic_parameters(self):
         # read dynamic parameteres from gui
         k_s = dpg.get_value("k_s")
-        k_v = dpg.get_value("k_v")
+        k_a = dpg.get_value("k_a")
         k_c = dpg.get_value("k_c")
+        k_v = dpg.get_value("k_v")
         k_p = dpg.get_value("k_p")
         vel = dpg.get_value("vel")
         collisions = dpg.get_value("collisions")
@@ -131,8 +139,9 @@ class GUI:
         # create parameter object
         params = DynamicParameters(
             k_s,
-            k_v,
+            k_a,
             k_c,
+            k_v,
             k_p,
             vel,
             collisions,
