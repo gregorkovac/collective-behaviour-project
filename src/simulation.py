@@ -10,7 +10,7 @@ class Response:
         self.dir = dir
 
 class SPPProperties:
-    def __init__(self, idx, e_ji, e_ji_orth, dist, e_i, e_j, theta_ij, theta_ji, phi_ij):
+    def __init__(self, idx, e_ji, e_ji_orth, dist, e_i, e_j, theta_ij, theta_ji, phi_ij, e_i_orth):
         self.idx = idx
         self.e_ji = e_ji
         self.e_ji_orth = e_ji_orth
@@ -20,6 +20,7 @@ class SPPProperties:
         self.theta_ij = theta_ij
         self.theta_ji = theta_ji
         self.phi_ij = phi_ij
+        self.e_i_orth = e_i_orth
 
 class Simulation:
     def __init__(self):
@@ -53,13 +54,17 @@ class Simulation:
         wiener = self.wiener(params)
 
         # consider flow factor for position offset
-        flow_offset = self.flow_offset(sp, params)
+        flow_offset, omega = self.flow_offset(sp, params)
 
         #flow_offset = 0
+        # omega = 0
+
+        # print(omega.mean)
 
         # update direction
         alpha = self.dir2ang(self.dir)
-        alpha += (alignment_attraction + wiener) * deltaTime
+        alpha += (alignment_attraction + wiener + omega) * deltaTime
+
         self.dir = self.ang2dir(alpha)
 
         # update position
@@ -123,12 +128,15 @@ class Simulation:
             phi_ij_sign = np.sign(phi_ij_sign[:, 0] - phi_ij_sign[:, 1])
             phi_ij *= phi_ij_sign
 
-            return SPPProperties(idx, e_ji, e_ji_orth, dist, e_i, e_j, theta_ij, theta_ji, phi_ij)
+            e_i_orth = np.column_stack((-e_i[:, 1], e_i[:, 0]))
+
+            return SPPProperties(idx, e_ji, e_ji_orth, dist, e_i, e_j, theta_ij, theta_ji, phi_ij, e_i_orth)
         return None
     
     def alignment_attraction(self, sp, params):
         I_paralell = params.k_v * np.sqrt(params.vel/params.k_p)
-        #I_paralell = 9
+        # print("I_||: ", I_paralell)
+        # I_paralell = 9
 
         aa = sp.dist * np.sin(sp.theta_ij) + I_paralell * np.sin(sp.phi_ij)
 
@@ -140,6 +148,7 @@ class Simulation:
         
     def wiener(self, params):
         I_n = params.sigma * np.power(params.vel*params.k_p, -1/4)
+        # print("I_n: ", I_n)
         #I_n = 0.5
         return np.random.normal(0, 1, (SP.num_fish)) * I_n
     
@@ -151,8 +160,27 @@ class Simulation:
         u_y = np.bincount(sp.idx[:, 0], weights=u[:, 1], minlength=SP.num_fish)
         U = np.column_stack((u_x, u_y))
         I_f = np.pi * params.fish_radius**2 * params.k_p / params.vel
+        # print("I_f: ", I_f)
         #I_f = 0.01
-        return U * I_f / np.pi
+
+        # grad_u_x = np.gradient(u_x)
+        # grad_u_y = np.gradient(u_y)
+        # grad_u = np.column_stack((grad_u_x, grad_u_y))
+
+
+        # omega = sp.e_i @ grad_u @ sp.e_ji_orth.T
+
+
+        grad_u = np.gradient(U, axis=1)
+
+        e_parallel = self.dir
+        e_perpendicular = np.column_stack((-e_parallel[:, 1], e_parallel[:, 0]))
+
+        omega = e_parallel @ grad_u.T @ e_perpendicular
+        Omega = self.dir2ang(omega)
+
+
+        return U * I_f / np.pi, Omega
     
     def calculate_distances(self):
         pos_rep = self.pos[:, :, np.newaxis].repeat(SP.num_fish, axis=2).transpose((2, 1, 0))

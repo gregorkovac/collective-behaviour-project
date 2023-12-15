@@ -101,7 +101,7 @@ class GUI:
             k_p,
             vel,
             collisions,
-            borders
+            borders,
         )
         return params
     
