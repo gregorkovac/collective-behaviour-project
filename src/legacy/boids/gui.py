@@ -12,6 +12,7 @@ class GUI:
         # add boids to the canvas
         self.boids = self.add_boids()
         self.dirs = self.add_dirs()
+        self.focus = self.add_focus()
 
     def create_gui(self):
         dpg.create_context()
@@ -44,9 +45,23 @@ class GUI:
                 max_value=2.0
             )
             dpg.add_slider_float(
-                label="sigma",
-                tag="sigma",
-                default_value=DP.sigma,
+                label="k_s",
+                tag="k_s",
+                default_value=DP.k_s,
+                min_value=0.0,
+                max_value=10.0
+            )
+            dpg.add_slider_float(
+                label="k_a",
+                tag="k_a",
+                default_value=DP.k_a,
+                min_value=0.0,
+                max_value=10.0
+            )
+            dpg.add_slider_float(
+                label="k_c",
+                tag="k_c",
+                default_value=DP.k_c,
                 min_value=0.0,
                 max_value=10.0
             )
@@ -81,27 +96,69 @@ class GUI:
                 default_value=DP.borders
             )
 
+            dpg.add_text("Neighbourhood distances")
+            dpg.add_slider_float(
+                label="Separation",
+                tag="separation_distance",
+                default_value=DP.separation_distance,
+                min_value=0.0,
+                max_value=SP.aquarium_size[0]
+            )
+            dpg.add_slider_float(
+                label="Alignment",
+                tag="alignment_distance",
+                default_value=DP.alignment_distance,
+                min_value=0.0,
+                max_value=SP.aquarium_size[0]
+            )
+            dpg.add_slider_float(
+                label="Cohesion",
+                tag="cohesion_distance",
+                default_value=DP.cohesion_distance,
+                min_value=0.0,
+                max_value=SP.aquarium_size[0]
+            )
+            dpg.add_slider_float(
+                label="Flow",
+                tag="flow_distance",
+                default_value=DP.flow_distance,
+                min_value=0.0,
+                max_value=SP.aquarium_size[0]
+            )
+
         dpg.show_viewport()
 
     def get_dynamic_parameters(self):
         # read dynamic parameteres from gui
         fish_radius = dpg.get_value("fish_radius")
-        sigma = dpg.get_value("sigma")
+        k_s = dpg.get_value("k_s")
+        k_a = dpg.get_value("k_a")
+        k_c = dpg.get_value("k_c")
         k_v = dpg.get_value("k_v")
         k_p = dpg.get_value("k_p")
         vel = dpg.get_value("vel")
         collisions = dpg.get_value("collisions")
         borders = dpg.get_value("borders")
+        separation_distance = dpg.get_value("separation_distance")
+        alignment_distance = dpg.get_value("alignment_distance")
+        cohesion_distance = dpg.get_value("cohesion_distance")
+        flow_distance = dpg.get_value("flow_distance")
 
         # create parameter object
         params = DynamicParameters(
             fish_radius,
-            sigma,
+            k_s,
+            k_a,
+            k_c,
             k_v,
             k_p,
             vel,
             collisions,
-            borders
+            borders,
+            separation_distance,
+            alignment_distance,
+            cohesion_distance,
+            flow_distance
         )
         return params
     
@@ -115,9 +172,45 @@ class GUI:
             dpg.configure_item(item=self.dirs[i],
                                 p2=[pos[i, 0], pos[i, 1]],
                                 p1=[pos[i, 0]-0.5*dir[i, 0], pos[i, 1]-0.5*dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("fish_radius")))
+    
+    def update_focus(self, res):
+        i = 0
+        pos = self.pos2pixels(res.pos[i, :])
+
+        # update gui
+        for k, v in self.focus.items():
+            dpg.configure_item(item=v, center=[pos[0], pos[1]], radius=self.pos2pixels(dpg.get_value(k)))
 
     def update_frameRate(self, deltaTime):
         dpg.set_value("FPS", str(int(1/deltaTime)))
+
+    def add_focus(self):
+        focus = dict()
+        focus["separation_distance"] = dpg.draw_circle(
+            center=[0, 0],
+            radius=self.pos2pixels(dpg.get_value("separation_distance")),
+            color=[255, 0, 0, 255],
+            parent="Canvas",
+        )
+        focus["alignment_distance"] = dpg.draw_circle(
+            center=[0, 0],
+            radius=self.pos2pixels(dpg.get_value("alignment_distance")),
+            color=[0, 255, 255, 255],
+            parent="Canvas",
+        )
+        focus["cohesion_distance"] = dpg.draw_circle(
+            center=[0, 0],
+            radius=self.pos2pixels(dpg.get_value("cohesion_distance")),
+            color=[0, 0, 255, 255],
+            parent="Canvas",
+        )
+        focus["flow_distance"] = dpg.draw_circle(
+            center=[0, 0],
+            radius=self.pos2pixels(dpg.get_value("flow_distance")),
+            color=[255, 0, 255, 255],
+            parent="Canvas",
+        )
+        return focus
 
     def add_boids(self):
         boids = list()

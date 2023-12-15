@@ -18,13 +18,12 @@ class Engine:
     def main_loop(self):
         deltaTime = time.time() - self.previous_frame_time
         self.previous_frame_time = time.time()
-        #deltaTime *= 10
+        #deltaTime = 0.01
 
         params = self.gui.get_dynamic_parameters()
         res = self.simulation.simulate(deltaTime, params)
 
         self.gui.update_boids(res)
-        self.gui.update_focus(res)
         self.gui.update_frameRate(deltaTime) 
 
 def main():
