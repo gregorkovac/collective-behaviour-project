@@ -27,7 +27,7 @@ DP = DynamicParameters(
     sigma = 0.103,
     k_v = 0.826,
     k_p = 0.41,
-    vel = 2,
+    vel = 1,
     collisions = True,
     borders="loop"
 )
