@@ -23,10 +23,10 @@ class DynamicParameters:
 
 SP = StaticParameters()
 DP = DynamicParameters(
-    fish_radius = 0.4,
-    sigma = 0.155,
-    k_v = 0.929,
-    k_p = 0.104,
+    fish_radius = 0.05,
+    sigma = 0.103,
+    k_v = 0.826,
+    k_p = 0.41,
     vel = 2,
     collisions = True,
     borders="loop"

@@ -35,6 +35,9 @@ class GUI:
             with dpg.group(horizontal=True):
                 dpg.add_text("Frame rate")
                 dpg.add_text("0", tag="FPS", color=[0, 255, 0, 255])
+            with dpg.group(horizontal=True):
+                dpg.add_text("Phase")
+                dpg.add_text("0", tag="phase", color=[0, 255, 0, 255])
             dpg.add_text("Simulation parameters")
             dpg.add_slider_float(
                 label="fish_radius",
@@ -118,6 +121,9 @@ class GUI:
 
     def update_frameRate(self, deltaTime):
         dpg.set_value("FPS", str(int(1/deltaTime)))
+
+    def update_phase(self, phase):
+        dpg.set_value("phase", str(phase))
 
     def add_boids(self):
         boids = list()

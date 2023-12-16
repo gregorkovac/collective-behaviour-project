@@ -28,12 +28,14 @@ class Simulation:
         self.ang2dir = lambda x: np.column_stack((np.cos(x), np.sin(x)))
         self.dir2ang = lambda x: np.arctan2(x[:, 1], x[:, 0])
 
-        spawn_offset = 5
+        spawn_offset = 40
         self.pos = np.random.uniform(spawn_offset, np.array(SP.aquarium_size)-spawn_offset, (SP.num_fish, 2))
         self.dir = self.ang2dir(np.random.rand(SP.num_fish) * 2 * np.pi)
         
         self.dists = self.calculate_distances()
         self.neighbours = None
+
+        self.phase = "/"
 
     def simulate(self, deltaTime, params):
         # get neighbours
@@ -98,6 +100,8 @@ class Simulation:
             for i in range(10):
                 self.resolve_collisions(params)
                 self.dists = self.calculate_distances()
+
+        self.print_global_order_params(sp, params)
 
         return Response(self.pos, self.dir)
     
@@ -179,9 +183,52 @@ class Simulation:
         omega = e_parallel @ grad_u.T @ e_perpendicular
         Omega = self.dir2ang(omega)
 
+        # Omega = 0
+
+        # print(np.gradient(u_y, axis=0).shape)
+
+        # vorticity = np.gradient(u_x, axis=0) - np.gradient(u_y, axis=0)
+
+        # Omega = np.linalg.norm(vorticity, axis=0)
+
+        # omega = np.gradient(u_x, axis=0) - np.gradient(u_y, axis=0)
+
+        # print(omega.shape)
+
+        # Omega = np.linalg.norm(omega, axis=1)
+        # Omega = omega
+
 
         return U * I_f / np.pi, Omega
     
+    def print_global_order_params(self, sp, params):
+        P = np.linalg.norm(np.abs(np.mean(self.dir, axis=0)))
+
+        center_of_mass = np.mean(self.pos, axis=0)
+
+        e_i_r = (self.pos - center_of_mass) / np.linalg.norm(self.pos - center_of_mass, axis=1)[:, np.newaxis]
+
+        r_i_dot = params.vel * self.dir
+
+        V = np.linalg.norm(np.mean(np.abs(r_i_dot), axis=0))
+
+        M = np.linalg.norm(np.mean(np.cross(e_i_r, r_i_dot), axis=0))
+
+        if P < 0.5:
+            if M < 0.4:
+                phase = "SWARMING"
+            else:
+                phase = "MILLING"
+        else:
+            if M < 0.4:
+                phase = "SCHOOLING"
+            else:
+                phase = "TURNING"
+
+        self.phase = phase
+
+        print("P = ", P, " M = ", M, " => ", phase)
+
     def calculate_distances(self):
         pos_rep = self.pos[:, :, np.newaxis].repeat(SP.num_fish, axis=2).transpose((2, 1, 0))
         dists = np.linalg.norm(pos_rep - self.pos[:,:, np.newaxis], axis=1)

@@ -25,6 +25,7 @@ class Engine:
 
         self.gui.update_boids(res)
         self.gui.update_frameRate(deltaTime) 
+        self.gui.update_phase(self.simulation.phase)
 
 def main():
     engine = Engine()
