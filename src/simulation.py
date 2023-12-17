@@ -1,6 +1,5 @@
 import numpy as np
 from simulation_parameters import SP
-from scipy.spatial import Voronoi
 from scipy.spatial import Delaunay
 
 np.random.seed(0)
@@ -165,6 +164,10 @@ class Simulation:
         u_x = np.bincount(sp.pairs[:, 0], weights=u[:, 0], minlength=SP.num_fish)
         u_y = np.bincount(sp.pairs[:, 0], weights=u[:, 1], minlength=SP.num_fish)
         U = np.column_stack((u_x, u_y))
+
+        # this is should be better, but has not been tested enaugh
+        #U = u.reshape((SP.num_fish, SP.num_fish, 2)).sum(axis=1)
+
         I_f = np.pi * params.fish_radius**2 * params.k_p / params.vel
         U = U * I_f / np.pi
         #I_f = 0.01
@@ -185,6 +188,9 @@ class Simulation:
         u_grad_i = np.empty((SP.num_fish, 2, 2))
         for p in {(0,0), (0,1), (1,0), (1,1)}:
             u_grad_i[:, p[0], p[1]] = np.bincount(sp.pairs[:, 0], weights=u_grad_ij[:, p[0], p[1]], minlength=SP.num_fish)
+
+        # this is should be better, but has not been tested enaugh
+        #u_grad_i = u_grad_ij.reshape((SP.num_fish, SP.num_fish, 2, 2)).sum(axis=1)
         
         u_grad_i *= I_f / np.pi
 
