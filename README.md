@@ -31,6 +31,10 @@ To run the simulation, follow these steps:
 1. In the terminal or command prompt, navigate to the project's root directory.
 2. Execute the command: `python main.py`.
 
+
+![Simulation Demo](https://github.com/gregorkovac/collective-fish-behaviour/blob/master/simulation.gif)
+
+
 ## Milestones
 - [x] [Milestone 1](https://github.com/gregorkovac/collective-fish-behaviour/milestone/1) 
 - [x] [Milestone 2](https://github.com/gregorkovac/collective-fish-behaviour/milestone/2) 
