@@ -16,17 +16,17 @@ This project is based on the paper [[1]](#1). The paper introduces a novel model
 - `presentation/`: Contains the slides for the final presentation.
 
 ## Running the Simulation
-## Prerequisites
+### Prerequisites
 - Python 3.x
 - `pip` for installing Python packages
 
-## Installation
+### Installation
 1. Clone the repository or download the source code to your local machine.
 2. Open a terminal or command prompt.
 3. Navigate to the directory containing the project files.
 4. Install the required libraries by running `pip install -r requirements.txt`.
 
-## Running the Simulation
+### Running the Simulation
 To run the simulation, follow these steps:
 1. In the terminal or command prompt, navigate to the project's root directory.
 2. Execute the command: `python main.py`.
