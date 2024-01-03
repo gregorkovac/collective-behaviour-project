@@ -39,8 +39,8 @@ DP = DynamicParameters(
     k_p = 0.41,
     vel = 5,
     pred_vel= 5,
-    pred_avoidance= 1,
-    pred_attraction= 1,
+    pred_avoidance= 0.5,
+    pred_attraction= 10,
     collisions = True,
     borders="loop"
 )
@@ -49,4 +49,7 @@ class ColorPalette:
     # fish = [1, 42, 74, 255]
     fish = [245, 144, 37, 255]
     fish_alt = [230, 95, 50, 255]
+    predator = [27, 20, 100, 255]
+    predator_alt = [6, 82, 221, 255]
+    predator_eyes = [255, 255, 255, 255]
     background = [202, 240, 248, 255]

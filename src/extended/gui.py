@@ -18,10 +18,10 @@ class GUI:
         self.dirs = self.add_dirs()
         self.dirs_2 = self.add_dirs_2()
 
-        self.particles = self.add_boids()
-
-        self.pred_boid = self.add_pred_boid()
+        self.pred_tails = self.add_pred_tails()
+        self.pred_boids = self.add_pred_boid()
         self.pred_dir = self.add_pred_dir()
+        self.pred_eyes = self.add_pred_eyes()
     
     @staticmethod
     def on_hover(sender, app_data):
@@ -194,10 +194,16 @@ class GUI:
                                 p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("fish_radius")))
         
         for i in range(SP.num_pred):
-            dpg.configure_item(item=self.pred_boid[i], center=[pred_pos[i, 0], pred_pos[i, 1]], radius=self.pos2pixels(dpg.get_value("pred_radius")))
-            dpg.configure_item(item=self.pred_dir[i],
-                                p2=[pred_pos[i, 0], pred_pos[i, 1]],
-                                p1=[pred_pos[i, 0]-0.5*pred_dir[i, 0], pred_pos[i, 1]-0.5*pred_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("pred_radius")))
+
+            perp_dir = np.array([dir[i, 1], -dir[i, 0]])
+
+            dpg.configure_item(item=self.pred_tails[i],
+                                p2=[(pred_pos[i, 0]-0.51*pred_dir[i,0]), (pred_pos[i, 1]-0.51*pred_dir[i,1])],
+                                p1=[pred_pos[i, 0]-0.5*pred_dir[i, 0], pred_pos[i, 1]-0.5*pred_dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("pred_radius")))
+            dpg.configure_item(item=self.pred_boids[i], center=[pred_pos[i, 0], pred_pos[i, 1]], radius=self.pos2pixels(dpg.get_value("pred_radius")))
+            # dpg.configure_item(item=self.pred_dir[i],
+            #                     p2=[pred_pos[i, 0], pred_pos[i, 1]],
+            #                     p1=[pred_pos[i, 0]-0.5*pred_dir[i, 0], pred_pos[i, 1]-0.5*pred_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("pred_radius")))
 
     def update_frameRate(self, deltaTime):
         dpg.set_value("FPS", str(int(1/deltaTime)))
@@ -211,8 +217,8 @@ class GUI:
             boids.append(dpg.draw_circle(
                 center=[0, 0],
                 radius=self.pos2pixels(dpg.get_value("pred_radius")),
-                color=[255, 0, 0, 255],
-                fill=[255, 0, 0, 255],
+                color=ColorPalette.predator,
+                fill=ColorPalette.predator,
                 parent="Canvas",
             ))
         return boids
@@ -224,10 +230,58 @@ class GUI:
                 p1=[0, 0],
                 p2=[0, 0],
                 thickness=self.pos2pixels(dpg.get_value("pred_radius")),
-                color=[255, 0, 0, 255],
+                color=ColorPalette.predator,
                 parent="Canvas",
             ))
         return dirs
+    
+    def add_pred_dirs_2(self):
+        dirs = list()
+        for i in range(SP.num_pred):
+            dirs.append(dpg.draw_arrow(
+                p1=[0, 0],
+                p2=[0, 0],
+                thickness=self.pos2pixels(dpg.get_value("pred_radius")),
+                color=ColorPalette.predator_alt,
+                parent="Canvas",
+            ))
+        return dirs
+    
+    def add_pred_tails(self):
+        dirs = list()
+        for i in range(SP.num_pred):
+            dirs.append(dpg.draw_arrow(
+                p1=[0, 0],
+                p2=[0, 0],
+                thickness=self.pos2pixels(dpg.get_value("pred_radius")),
+                color=ColorPalette.predator_alt,
+                parent="Canvas",
+            ))
+        return dirs
+    
+    def add_pred_boids(self):
+        boids = list()
+        for i in range(SP.num_pred):
+            boids.append(dpg.draw_circle(
+                center=[0, 0],
+                radius=self.pos2pixels(dpg.get_value("pred_radius")),
+                color=ColorPalette.predator_alt,
+                fill=ColorPalette.predator,
+                parent="Canvas",
+            ))
+        return boids
+    
+    def add_pred_eyes(self):
+        boids = list()
+        for i in range(2*SP.num_pred):
+            boids.append(dpg.draw_circle(
+                center=[0, 0],
+                radius=self.pos2pixels(dpg.get_value("pred_radius"))/2,
+                color=ColorPalette.predator_eyes,
+                fill=ColorPalette.predator_eyes,
+                parent="Canvas",
+            ))
+        return boids
 
     def add_boids(self):
         boids = list()
