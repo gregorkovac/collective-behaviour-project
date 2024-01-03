@@ -72,8 +72,8 @@ class Simulation:
         flow_offset, omega = self.flow_offset(sp, params)
 
         # PRED: consider predator avoidance
-        #avoidance, pred_attraction = self.predator_affect(sp, params)
-        avoidance, pred_attraction = 0, 0
+        avoidance, pred_attraction = self.predator_affect(params)
+        #avoidance, pred_attraction = 0, 0
 
 
         # UPDATE
@@ -288,50 +288,34 @@ class Simulation:
         return U, omega
     
     # turn away from the predator
-    def predator_affect(self, sp, params):
+    def predator_affect(self, params):
         #--------------------------------------------
         # calculation of properties
         #--------------------------------------------
-        e_ji = self.pos - self.pred_pos
-        dist = np.linalg.norm(e_ji, axis=1)
-        dist = np.where(dist > 0, dist, 1)
-        e_ji /= dist[:, np.newaxis]
-        e_ji_orth = np.column_stack((-e_ji[:, 1], e_ji[:, 0]))
+        sp_fp = self.get_spp_properties(self.pos, self.pred_pos, self.dir, self.pred_dir)
 
-        e_i = self.dir
-        e_j = self.pred_dir
-
-        theta_ij = np.arccos((-e_ji * e_i).sum(axis=1))
-        theta_ij_sign = e_i * (-e_ji[:, [1, 0]])
-        theta_ij_sign = np.sign(theta_ij_sign[:, 0] - theta_ij_sign[:, 1])
-        theta_ij *= theta_ij_sign
-
-        theta_ji = np.arccos((e_ji * e_j).sum(axis=1))
-        theta_ji_sign = e_j * (e_ji[:, [1, 0]])
-        theta_ji_sign = np.sign(theta_ji_sign[:, 0] - theta_ji_sign[:, 1])
-        theta_ji *= theta_ji_sign
-
-        phi_ij = np.arccos((e_i * e_j).sum(axis=1))
-        phi_ij_sign = e_i * (e_j[:, [1, 0]])
-        phi_ij_sign = np.sign(phi_ij_sign[:, 0] - phi_ij_sign[:, 1])
-        phi_ij *= phi_ij_sign
-
-        e_i_orth = np.column_stack((-e_i[:, 1], e_i[:, 0]))
-
-        theta_ij_star = np.where(theta_ij > 0, theta_ij - np.pi, theta_ij + np.pi)
+        theta_ij_star = np.where(sp_fp.theta_ij > 0, sp_fp.theta_ij - np.pi, sp_fp.theta_ij + np.pi)
         #--------------------------------------------
 
         # fish avoidance rotation
-        avoidance = 1/dist * np.sin(theta_ij_star)
-        weights = (1 + np.cos(theta_ij)) / 2 + 1e-6
-        avoidance = params.pred_avoidance * avoidance * weights
+        avoidance = 1/sp_fp.dist * np.sin(theta_ij_star)
+        weights = (1 + np.cos(sp_fp.theta_ij)) + 1e-6
+        weights = weights.reshape((SP.num_fish, SP.num_pred))
+        avoidance = avoidance.reshape((SP.num_fish, SP.num_pred))
+        avoidance = avoidance * weights
+        avoidance = avoidance.sum(axis=1) / weights.sum(axis=1)
+        avoidance = params.pred_avoidance * avoidance
 
         # predator attraction rotation
-        pred_attraction = 1/dist * np.sin(theta_ji)
-        pred_weights = (1 + np.cos(theta_ji)) + 1e-6
+        pred_attraction = 1/sp_fp.dist * np.sin(sp_fp.theta_ji)
+        pred_weights = (1 + np.cos(sp_fp.theta_ji)) + 1e-6
+        pred_weights = pred_weights.reshape((SP.num_fish, SP.num_pred))
+        pred_attraction = pred_attraction.reshape((SP.num_fish, SP.num_pred))
         pred_attraction = pred_attraction * pred_weights
         pred_attraction = pred_attraction.sum(axis=0) / pred_weights.sum(axis=0)
         pred_attraction = params.pred_attraction * pred_attraction
+
+        print(avoidance.shape, pred_attraction.shape)
 
         return avoidance, pred_attraction
 
