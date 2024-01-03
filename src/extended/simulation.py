@@ -315,7 +315,7 @@ class Simulation:
         pred_attraction = pred_attraction.sum(axis=0) / pred_weights.sum(axis=0)
         pred_attraction = params.pred_attraction * pred_attraction
 
-        print(avoidance.shape, pred_attraction.shape)
+        # print(avoidance.shape, pred_attraction.shape)
 
         return avoidance, pred_attraction
 

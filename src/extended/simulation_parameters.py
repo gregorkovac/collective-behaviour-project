@@ -32,15 +32,21 @@ class DynamicParameters:
 
 SP = StaticParameters()
 DP = DynamicParameters(
-    fish_radius = 0.05,
-    pred_radius = 0.1,
+    fish_radius = 0.5,
+    pred_radius = 1,
     sigma = 0.103,
     k_v = 0.826,
     k_p = 0.41,
-    vel = 1,
-    pred_vel= 1,
+    vel = 5,
+    pred_vel= 5,
     pred_avoidance= 1,
     pred_attraction= 1,
     collisions = True,
     borders="loop"
 )
+
+class ColorPalette:
+    # fish = [1, 42, 74, 255]
+    fish = [245, 144, 37, 255]
+    fish_alt = [230, 95, 50, 255]
+    background = [202, 240, 248, 255]
