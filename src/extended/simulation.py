@@ -1,15 +1,17 @@
 import numpy as np
 from simulation_parameters import SP
 from scipy.spatial import Delaunay
+import time
 
 np.random.seed(0)
 
 class Response:
-    def __init__(self, pos, dir, pred_pos, pred_dir):
+    def __init__(self, pos, dir, pred_pos, pred_dir, flow_dir):
         self.pos = pos
         self.dir = dir
         self.pred_pos = pred_pos
         self.pred_dir = pred_dir
+        self.flow_dir = flow_dir
 
 class SPPProperties:
     def __init__(self, pairs, e_ji, e_ji_orth, dist, e_i, e_j, theta_ij, theta_ji, phi_ij, e_i_orth):
@@ -72,9 +74,12 @@ class Simulation:
         flow_offset, omega = self.flow_offset(sp, params)
 
         # PRED: consider predator avoidance
-        avoidance, pred_attraction = self.predator_affect(params)
+        if SP.num_pred > 0:
+            avoidance, pred_attraction = self.predator_affect(params)
         #avoidance, pred_attraction = 0, 0
-
+            
+        # ALL: consider external flow
+        external_flow_offset = self.external_flow(params)
 
         # UPDATE
         # --------------------------------------------
@@ -89,10 +94,14 @@ class Simulation:
         #print(omega[:10])
 
         # update fish angle
-        delta_alpha[:SP.num_fish] += alignment_attraction + avoidance
+        delta_alpha[:SP.num_fish] += alignment_attraction
         
-        # update predator angle
-        delta_alpha[SP.num_fish:] += pred_attraction
+        if SP.num_pred > 0:
+            # update fish angle
+            delta_alpha[:SP.num_fish] += avoidance
+        
+            # update predator angle
+            delta_alpha[SP.num_fish:] += pred_attraction
 
         # consider delta time
         delta_alpha *= deltaTime
@@ -112,7 +121,7 @@ class Simulation:
         dir[SP.num_fish:] *= params.pred_vel
 
         # update position
-        self.spp_pos += (dir + flow_offset) * deltaTime
+        self.spp_pos += (dir + flow_offset + external_flow_offset) * deltaTime
 
         # handle borders
         match params.borders:
@@ -139,17 +148,11 @@ class Simulation:
                     self.spp_dir[mask1] = -np.abs(self.spp_dir[mask1])
             # Repel from the walls
             case "repulsion":
-                mask1 = self.pos < 1/10*SP.aquarium_size[0]
-                mask2 = self.pos > 9/10*SP.aquarium_size[0]
-                self.dir[mask1] += (1/10*SP.aquarium_size[0] - self.pos[mask1]) * params.vel * deltaTime
-                self.dir[mask2] -= (self.pos[mask2] - 9/10*SP.aquarium_size[0]) * params.vel * deltaTime
-                self.dir /= np.linalg.norm(self.dir, axis=1)[:, np.newaxis]
-
-                mask1 = self.pred_pos < 1/10*SP.aquarium_size[0]
-                mask2 = self.pred_pos > 9/10*SP.aquarium_size[0]
-                self.pred_dir[mask1] += (1/10*SP.aquarium_size[0] - self.pred_pos[mask1]) * params.pred_vel * deltaTime
-                self.pred_dir[mask2] -= (self.pred_pos[mask2] - 9/10*SP.aquarium_size[0]) * params.pred_vel * deltaTime
-                self.pred_dir /= np.linalg.norm(self.pred_dir, axis=1)[:, np.newaxis]
+                mask1 = self.spp_pos < 1/10*SP.aquarium_size[0]
+                mask2 = self.spp_pos > 9/10*SP.aquarium_size[0]
+                self.spp_dir[mask1] += (1/10*SP.aquarium_size[0] - self.spp_pos[mask1]) * params.vel * deltaTime
+                self.spp_dir[mask2] -= (self.spp_pos[mask2] - 9/10*SP.aquarium_size[0]) * params.vel * deltaTime
+                self.spp_dir /= np.linalg.norm(self.spp_dir, axis=1)[:, np.newaxis]
 
         # update distances between all fish
         self.dists = self.calculate_distances()
@@ -161,7 +164,7 @@ class Simulation:
         # update global order parameters
         self.get_global_order_params(sp, params)
 
-        return Response(self.pos, self.dir, self.pred_pos, self.pred_dir)
+        return Response(self.pos, self.dir, self.pred_pos, self.pred_dir, external_flow_offset)
     
     @staticmethod
     def get_spp_properties(pos0, pos1, dir0, dir1):
@@ -318,6 +321,18 @@ class Simulation:
         # print(avoidance.shape, pred_attraction.shape)
 
         return avoidance, pred_attraction
+    
+    def external_flow(self, params):
+        pos = self.spp_pos
+        angle = params.external_flow_angle
+        flow_dir = np.array([np.cos(angle), np.sin(angle)])
+        t = time.time() % params.external_flow_wavelength
+        period = 2*np.pi/params.external_flow_wavelength
+        offset = flow_dir*t*params.external_flow_velocity
+        U = np.sin(period * (pos + offset) @ flow_dir)
+        U = params.external_flow_mean + params.external_flow_amplitude * U
+        U = U[:, np.newaxis] * flow_dir
+        return U
 
     
     def get_global_order_params(self, sp, params):

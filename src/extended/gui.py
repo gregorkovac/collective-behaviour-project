@@ -22,6 +22,15 @@ class GUI:
         self.pred_boids = self.add_pred_boid()
         self.pred_dir = self.add_pred_dir()
         self.pred_eyes = self.add_pred_eyes()
+        self.flow_dir = self.add_flow_dir()
+
+        """dpg.draw_circle(
+                center=[self.pos2pixels(SP.aquarium_size[0])/2, self.pos2pixels(SP.aquarium_size[1])/2],
+                radius=self.pos2pixels(SP.aquarium_size[0]),
+                color=[0, 100, 200, 100],
+                fill=[0, 100, 200, 100],
+                parent="Canvas",
+            )"""
     
     @staticmethod
     def on_hover(sender, app_data):
@@ -36,6 +45,8 @@ class GUI:
     def create_gui(self):
         dpg.create_context()
         
+        #dpg.show_item_registry()        
+
         #dpg.show_item_registry()
         dpg.create_viewport(
             title="Simulation",
@@ -134,6 +145,43 @@ class GUI:
                 max_value=10.0
             )
 
+            dpg.add_text("External flow parameters")
+            dpg.add_slider_float(
+                label="external_flow_angle",
+                tag="external_flow_angle",
+                default_value=DP.external_flow_angle,
+                min_value=-np.pi,
+                max_value=np.pi
+            )
+            dpg.add_slider_float(
+                label="external_flow_mean",
+                tag="external_flow_mean",
+                default_value=DP.external_flow_mean,
+                min_value=0,
+                max_value=10
+            )
+            dpg.add_slider_float(
+                label="external_flow_amplitude",
+                tag="external_flow_amplitude",
+                default_value=DP.external_flow_amplitude,
+                min_value=0,
+                max_value=10
+            )
+            dpg.add_slider_float(
+                label="external_flow_velocity",
+                tag="external_flow_velocity",
+                default_value=DP.external_flow_velocity,
+                min_value=0,
+                max_value=10.0
+            )
+            dpg.add_slider_float(
+                label="external_flow_wavelength",
+                tag="external_flow_wavelength",
+                default_value=DP.external_flow_wavelength,
+                min_value=0.01,
+                max_value=10
+            )
+
         # create a theme
         #theme_id = dpg.add_theme()
 
@@ -157,6 +205,11 @@ class GUI:
         pred_attraction = dpg.get_value("pred_attraction")
         collisions = dpg.get_value("collisions")
         borders = dpg.get_value("borders")
+        external_flow_angle = dpg.get_value("external_flow_angle")
+        external_flow_mean = dpg.get_value("external_flow_mean")
+        external_flow_amplitude = dpg.get_value("external_flow_amplitude")
+        external_flow_velocity = dpg.get_value("external_flow_velocity")
+        external_flow_wavelength = dpg.get_value("external_flow_wavelength")
 
         # create parameter object
         params = DynamicParameters(
@@ -171,6 +224,11 @@ class GUI:
             pred_attraction,
             collisions,
             borders,
+            external_flow_angle,
+            external_flow_mean,
+            external_flow_amplitude,
+            external_flow_velocity,
+            external_flow_wavelength
         )
         return params
     
@@ -179,6 +237,7 @@ class GUI:
         dir = self.pos2pixels(res.dir*2* dpg.get_value("fish_radius"))
         pred_pos = self.pos2pixels(res.pred_pos)
         pred_dir = self.pos2pixels(res.pred_dir*2* dpg.get_value("pred_radius"))
+        flow_dir = self.pos2pixels(res.flow_dir*2* dpg.get_value("fish_radius"))
 
         # update gui
         for i in range(SP.num_fish):
@@ -192,6 +251,10 @@ class GUI:
             dpg.configure_item(item=self.tails[i],
                                 p2=[(pos[i, 0]-0.71*dir[i,0]), (pos[i, 1]-0.71*dir[i,1])],
                                 p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("fish_radius")))
+            dpg.configure_item(item=self.flow_dir[i],
+                                p2=[pos[i, 0], pos[i, 1]],
+                                p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("fish_radius")))
+                               
         
         for i in range(SP.num_pred):
 
@@ -222,6 +285,18 @@ class GUI:
                 parent="Canvas",
             ))
         return boids
+    
+    def add_flow_dir(self):
+        dirs = list()
+        for i in range(SP.num_fish):
+            dirs.append(dpg.draw_arrow(
+                p1=[0, 0],
+                p2=[0, 0],
+                thickness=self.pos2pixels(1),
+                color=ColorPalette.predator,
+                parent="Canvas",
+            ))
+        return dirs
     
     def add_pred_dir(self):
         dirs = list()

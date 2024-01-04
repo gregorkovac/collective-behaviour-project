@@ -2,7 +2,7 @@ class StaticParameters:
     pixels_per_meter = 15
     aquarium_size = [60, 60]
     num_fish = 100
-    num_pred = 2
+    num_pred = 10
     sigma = 3.1415/8
 
 class DynamicParameters:
@@ -17,7 +17,12 @@ class DynamicParameters:
     pred_avoidance,
     pred_attraction,
     collisions,
-    borders):
+    borders,
+    external_flow_angle,
+    external_flow_mean,
+    external_flow_amplitude,
+    external_flow_velocity,
+    external_flow_wavelength):
         self.fish_radius = fish_radius
         self.pred_radius = pred_radius
         self.sigma = sigma
@@ -29,6 +34,11 @@ class DynamicParameters:
         self.pred_attraction = pred_attraction
         self.collisions = collisions
         self.borders = borders
+        self.external_flow_angle = external_flow_angle
+        self.external_flow_mean = external_flow_mean
+        self.external_flow_amplitude = external_flow_amplitude
+        self.external_flow_velocity = external_flow_velocity
+        self.external_flow_wavelength = external_flow_wavelength
 
 SP = StaticParameters()
 DP = DynamicParameters(
@@ -42,7 +52,12 @@ DP = DynamicParameters(
     pred_avoidance= 0.5,
     pred_attraction= 10,
     collisions = True,
-    borders="loop"
+    borders="loop",
+    external_flow_angle = 0,
+    external_flow_mean = 0,
+    external_flow_amplitude= 0,
+    external_flow_velocity = 1,
+    external_flow_wavelength = 10
 )
 
 class ColorPalette:
@@ -53,3 +68,4 @@ class ColorPalette:
     predator_alt = [6, 82, 221, 255]
     predator_eyes = [255, 255, 255, 255]
     background = [202, 240, 248, 255]
+    #background = [202/3, 240/4, 248/2, 255]
