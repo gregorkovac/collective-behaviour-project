@@ -2,8 +2,9 @@ class StaticParameters:
     pixels_per_meter = 15
     aquarium_size = [60, 60]
     num_fish = 100
-    num_pred = 10
+    num_pred = 20
     sigma = 3.1415/8
+    flow_field_size = 20
 
 class DynamicParameters:
     def __init__(self,
@@ -68,4 +69,7 @@ class ColorPalette:
     predator_alt = [6, 82, 221, 255]
     predator_eyes = [255, 255, 255, 255]
     background = [202, 240, 248, 255]
+    flow_hsv = [200, 50, 80]
+    flow = [202, 240, 248, 255]
+    visualizations = [31, 198, 85, 255]
     #background = [202/3, 240/4, 248/2, 255]

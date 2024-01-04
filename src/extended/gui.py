@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 from simulation_parameters import *
 import numpy as np
+import colorsys
 
 class GUI:
     def __init__(self):
@@ -13,6 +14,11 @@ class GUI:
         # set background color
         dpg.set_viewport_clear_color(color=ColorPalette.background)
         
+        self.external_flow_field = self.add_flow_field()
+        self.external_flow_field_arrows = self.add_flow_field_arrows()
+
+        self.flow_dir = self.add_flow_dir()
+        
         # add boids to the canvas
         self.tails = self.add_tails()
         self.dirs = self.add_dirs()
@@ -22,7 +28,6 @@ class GUI:
         self.pred_boids = self.add_pred_boid()
         self.pred_dir = self.add_pred_dir()
         self.pred_eyes = self.add_pred_eyes()
-        self.flow_dir = self.add_flow_dir()
 
         """dpg.draw_circle(
                 center=[self.pos2pixels(SP.aquarium_size[0])/2, self.pos2pixels(SP.aquarium_size[1])/2],
@@ -238,6 +243,7 @@ class GUI:
         pred_pos = self.pos2pixels(res.pred_pos)
         pred_dir = self.pos2pixels(res.pred_dir*2* dpg.get_value("pred_radius"))
         flow_dir = self.pos2pixels(res.flow_dir*2* dpg.get_value("fish_radius"))
+        external_flow_field = res.external_flow_field
 
         # update gui
         for i in range(SP.num_fish):
@@ -253,7 +259,7 @@ class GUI:
                                 p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("fish_radius")))
             dpg.configure_item(item=self.flow_dir[i],
                                 p2=[pos[i, 0], pos[i, 1]],
-                                p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("fish_radius")))
+                                p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")))
                                
         
         for i in range(SP.num_pred):
@@ -267,6 +273,29 @@ class GUI:
             # dpg.configure_item(item=self.pred_dir[i],
             #                     p2=[pred_pos[i, 0], pred_pos[i, 1]],
             #                     p1=[pred_pos[i, 0]-0.5*pred_dir[i, 0], pred_pos[i, 1]-0.5*pred_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("pred_radius")))
+
+
+        for i in range(SP.flow_field_size):
+            for j in range(SP.flow_field_size):
+                x = self.pos2pixels(i * 1/SP.flow_field_size * SP.aquarium_size[0] + 0.5 / SP.flow_field_size * SP.aquarium_size[0])
+                y = self.pos2pixels(j * 1/SP.flow_field_size * SP.aquarium_size[1] + 0.5 / SP.flow_field_size * SP.aquarium_size[1])
+
+                start = np.array([x, y])
+                end = start + self.pos2pixels(external_flow_field[i, j])
+
+                # dpg.configure_item(item=self.external_flow_field_arrows[i*SP.flow_field_size + j],
+                #                     p2=start,
+                #                     p1=end, thickness=self.pos2pixels(0.1))
+                
+                # mean = np.mean(external_flow_field[i, j])
+
+                # if i == 0 and j == 0:
+                #     print(np.linalg.norm(external_flow_field[i, j]))
+
+                flow_color = self.get_flow_color(external_flow_field[i, j])
+                dpg.configure_item(item=self.external_flow_field[i*SP.flow_field_size + j],
+                                   color=flow_color, fill=flow_color)
+                
 
     def update_frameRate(self, deltaTime):
         dpg.set_value("FPS", str(int(1/deltaTime)))
@@ -292,8 +321,8 @@ class GUI:
             dirs.append(dpg.draw_arrow(
                 p1=[0, 0],
                 p2=[0, 0],
-                thickness=self.pos2pixels(1),
-                color=ColorPalette.predator,
+                thickness=self.pos2pixels(0.1),
+                color=ColorPalette.visualizations,
                 parent="Canvas",
             ))
         return dirs
@@ -406,6 +435,81 @@ class GUI:
             ))
         return dirs
     
+    def add_flow_field(self):
+        dirs = list()
+        for i in range(SP.flow_field_size):
+            for j in range(SP.flow_field_size):
+                x = self.pos2pixels(i * 1/SP.flow_field_size * SP.aquarium_size[0] + 0.5 / SP.flow_field_size * SP.aquarium_size[0])
+                y = self.pos2pixels(j * 1/SP.flow_field_size * SP.aquarium_size[1] + 0.5 / SP.flow_field_size * SP.aquarium_size[1])
+
+                # dirs.append(dpg.draw_arrow(
+                #     p1=[x, y],
+                #     p2=[x, y],
+                #     thickness=self.pos2pixels(0.1),
+                #     color=ColorPalette.visualizations,
+                #     parent="Canvas",
+                # ))
+
+                dirs.append(dpg.draw_circle(
+                    center = [x, y],
+                    radius=2*self.pos2pixels(SP.aquarium_size[0]/(SP.flow_field_size*2)),
+                    color=ColorPalette.flow,
+                    fill=ColorPalette.flow,
+                    parent="Canvas",
+                ))
+        return dirs
+    
+    def add_flow_field_arrows(self):
+        dirs = list()
+        for i in range(SP.flow_field_size):
+            for j in range(SP.flow_field_size):
+                x = self.pos2pixels(i * 1/SP.flow_field_size * SP.aquarium_size[0] + 0.5 / SP.flow_field_size * SP.aquarium_size[0])
+                y = self.pos2pixels(j * 1/SP.flow_field_size * SP.aquarium_size[1] + 0.5 / SP.flow_field_size * SP.aquarium_size[1])
+
+                dirs.append(dpg.draw_arrow(
+                    p1=[x, y],
+                    p2=[x, y],
+                    thickness=self.pos2pixels(0.1),
+                    color=ColorPalette.visualizations,
+                    parent="Canvas",
+                ))
+        return dirs
+    
+    def get_flow_color(self, flow):
+        # print(flow)
+
+        flow_length = np.linalg.norm(flow)
+
+        c = ColorPalette.flow_hsv.copy()
+
+        c[1] += 10*flow_length
+
+        if c[1] > 100:
+            c[1] = 100
+        elif c[1] < 0:
+            c[1] = 0
+
+        # c[2] += mean_flow * 50
+
+        # c[0] += flow[0] * 50
+        # c[2] += flow[1] * 50
+
+        # if c[0] < 200:
+        #     c[0] = 200
+        # elif c[0] > 260:
+        #     c[0] = 260
+
+        # print(flow_length, " -> ", c)
+        # if c[2] < 80:
+        #     c[2] = 80
+        # elif c[2] > 100:
+        #     c[2] = 100
+
+        c_rgb = colorsys.hsv_to_rgb(c[0]/360.0, c[1]/100.0, c[2]/100.0)
+
+        return [c_rgb[0]*255, c_rgb[1]*255, c_rgb[2]*255, 255]
+
+
     def render_frame(self):
         dpg.render_dearpygui_frame()
 
