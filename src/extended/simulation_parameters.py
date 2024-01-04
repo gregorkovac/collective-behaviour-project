@@ -2,9 +2,9 @@ class StaticParameters:
     pixels_per_meter = 15
     aquarium_size = [60, 60]
     num_fish = 100
-    num_pred = 20
+    num_pred = 0
     sigma = 3.1415/8
-    flow_field_size = 20
+    flow_field_size = 30
 
 class DynamicParameters:
     def __init__(self,
@@ -55,10 +55,10 @@ DP = DynamicParameters(
     collisions = True,
     borders="loop",
     external_flow_angle = 0,
-    external_flow_mean = 0,
-    external_flow_amplitude= 0,
-    external_flow_velocity = 1,
-    external_flow_wavelength = 10
+    external_flow_mean = 2,
+    external_flow_amplitude= 1,
+    external_flow_velocity = 20,
+    external_flow_wavelength = 40
 )
 
 class ColorPalette:

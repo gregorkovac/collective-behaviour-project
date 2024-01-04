@@ -330,7 +330,7 @@ class Simulation:
         t = time.time() % params.external_flow_wavelength
         period = 2*np.pi/params.external_flow_wavelength
         offset = flow_dir*t*params.external_flow_velocity
-        U = np.sin(period * (pos + offset) @ flow_dir)
+        U = np.sin(period * (pos - offset) @ flow_dir)
         U = params.external_flow_mean + params.external_flow_amplitude * U
         U = U[:, np.newaxis] * flow_dir
         return U
@@ -346,11 +346,11 @@ class Simulation:
         t = time.time() % params.external_flow_wavelength
         period = 2*np.pi/params.external_flow_wavelength
         offset = flow_dir*t*params.external_flow_velocity
-        U = np.sin(period * (pos + offset) @ flow_dir)
+        U = np.sin(period * (pos - offset) @ flow_dir)
         U = params.external_flow_mean + params.external_flow_amplitude * U
         U = U[:, np.newaxis] * flow_dir
 
-        return U.reshape((SP.flow_field_size, SP.flow_field_size, 2))
+        return U.reshape((SP.flow_field_size, SP.flow_field_size, 2)).transpose((1, 0, 2))
     
     def get_global_order_params(self, sp, params):
         P = np.linalg.norm(np.mean(self.dir, axis=0))

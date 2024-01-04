@@ -17,7 +17,7 @@ class GUI:
         self.external_flow_field = self.add_flow_field()
         self.external_flow_field_arrows = self.add_flow_field_arrows()
 
-        self.flow_dir = self.add_flow_dir()
+        #self.flow_dir = self.add_flow_dir()
         
         # add boids to the canvas
         self.tails = self.add_tails()
@@ -29,13 +29,13 @@ class GUI:
         self.pred_dir = self.add_pred_dir()
         self.pred_eyes = self.add_pred_eyes()
 
-        """dpg.draw_circle(
+        dpg.draw_circle(
                 center=[self.pos2pixels(SP.aquarium_size[0])/2, self.pos2pixels(SP.aquarium_size[1])/2],
                 radius=self.pos2pixels(SP.aquarium_size[0]),
                 color=[0, 100, 200, 100],
                 fill=[0, 100, 200, 100],
                 parent="Canvas",
-            )"""
+            )
     
     @staticmethod
     def on_hover(sender, app_data):
@@ -51,11 +51,11 @@ class GUI:
         dpg.create_context()
         
         #dpg.show_item_registry()        
-
+        settings_width = 400
         #dpg.show_item_registry()
         dpg.create_viewport(
             title="Simulation",
-            width=self.pos2pixels(SP.aquarium_size[0]),
+            width=self.pos2pixels(SP.aquarium_size[0])+settings_width,
             height=self.pos2pixels(SP.aquarium_size[1]),
             resizable=False)
         dpg.setup_dearpygui()
@@ -65,9 +65,12 @@ class GUI:
 
         with dpg.window(label="Settings",
                         tag="Settings",
-                        autosize=True,
+                        width=settings_width,
+                        height=self.pos2pixels(SP.aquarium_size[1]),
+                        #autosize=True,
+                        no_move=True,
                         no_title_bar=True,
-                        pos=[10, 10]):
+                        pos=[self.pos2pixels(SP.aquarium_size[0]), 0]):
             with dpg.group(horizontal=True):
                 dpg.add_text("Frame rate")
                 dpg.add_text("0", tag="FPS", color=ColorPalette.fish)
@@ -152,39 +155,39 @@ class GUI:
 
             dpg.add_text("External flow parameters")
             dpg.add_slider_float(
-                label="external_flow_angle",
+                label="flow_angle",
                 tag="external_flow_angle",
                 default_value=DP.external_flow_angle,
                 min_value=-np.pi,
                 max_value=np.pi
             )
             dpg.add_slider_float(
-                label="external_flow_mean",
+                label="flow_mean",
                 tag="external_flow_mean",
                 default_value=DP.external_flow_mean,
                 min_value=0,
                 max_value=10
             )
             dpg.add_slider_float(
-                label="external_flow_amplitude",
+                label="flow_amplitude",
                 tag="external_flow_amplitude",
                 default_value=DP.external_flow_amplitude,
                 min_value=0,
                 max_value=10
             )
             dpg.add_slider_float(
-                label="external_flow_velocity",
+                label="flow_velocity",
                 tag="external_flow_velocity",
                 default_value=DP.external_flow_velocity,
                 min_value=0,
-                max_value=10.0
+                max_value=100
             )
             dpg.add_slider_float(
-                label="external_flow_wavelength",
+                label="flow_wavelength",
                 tag="external_flow_wavelength",
                 default_value=DP.external_flow_wavelength,
                 min_value=0.01,
-                max_value=10
+                max_value=100
             )
 
         # create a theme
@@ -257,9 +260,9 @@ class GUI:
             dpg.configure_item(item=self.tails[i],
                                 p2=[(pos[i, 0]-0.71*dir[i,0]), (pos[i, 1]-0.71*dir[i,1])],
                                 p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("fish_radius")))
-            dpg.configure_item(item=self.flow_dir[i],
-                                p2=[pos[i, 0], pos[i, 1]],
-                                p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")))
+            #dpg.configure_item(item=self.flow_dir[i],
+            #                    p2=[pos[i, 0], pos[i, 1]],
+            #                    p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")))
                                
         
         for i in range(SP.num_pred):
