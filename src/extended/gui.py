@@ -311,7 +311,7 @@ class GUI:
                     size = 0
                 min_size = 0.05
                 size = min_size + (1-min_size)*size
-                print(flow, amplitude)
+                # print(flow, amplitude)
                 size = self.flow_circle_size * size
                 dpg.configure_item(item=self.external_flow_field[i*SP.flow_field_size + j], radius=size)
 
@@ -321,7 +321,7 @@ class GUI:
                 color[3] = transparancy
                 dpg.configure_item(item=self.flow_dir[i*SP.flow_field_size + j],
                                     p2=start,
-                                    p1=end, thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")),
+                                    p1=end, thickness=0.4*self.pos2pixels(dpg.get_value("fish_radius")),
                                     color=color)
                 
 
@@ -482,6 +482,7 @@ class GUI:
                 dirs.append(dpg.draw_circle(
                     center = [x, y],
                     radius=self.flow_circle_size,
+                    thickness=self.pos2pixels(0.1),
                     color=ColorPalette.flow_circle,
                     fill=ColorPalette.flow,
                     parent="Canvas",
