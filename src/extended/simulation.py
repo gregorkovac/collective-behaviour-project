@@ -81,7 +81,8 @@ class Simulation:
         #avoidance, pred_attraction = 0, 0
             
         # ALL: consider external flow
-        external_flow_offset = self.external_flow(params)
+        external_flow_offset, external_omega = self.external_flow(params)
+        print(external_omega[:5])
 
         # UPDATE
         # --------------------------------------------
@@ -92,11 +93,11 @@ class Simulation:
         delta_alpha = np.zeros(SP.num_fish+SP.num_pred)
 
         # update all spp angle with wiener process and flow
-        delta_alpha += wiener + omega
+        delta_alpha += external_omega + wiener# + omega + external_omega
         #print(omega[:10])
 
         # update fish angle
-        delta_alpha[:SP.num_fish] += alignment_attraction
+        #delta_alpha[:SP.num_fish] += alignment_attraction
         
         if SP.num_pred > 0:
             # update fish angle
@@ -123,7 +124,8 @@ class Simulation:
         dir[SP.num_fish:] *= params.pred_vel
 
         # update position
-        self.spp_pos += (dir + flow_offset + external_flow_offset) * deltaTime
+        #self.spp_pos += (dir + flow_offset + external_flow_offset) * deltaTime
+        #self.spp_pos += (dir + external_flow_offset) * deltaTime
 
         # handle borders
         match params.borders:
@@ -272,7 +274,7 @@ class Simulation:
         
         # calculate gradient of flow velocity for every pair of fish
         u_grad_ij = np.concatenate((u_dx[:,:, np.newaxis], u_dy[:,:, np.newaxis]), axis=2)
-        u_grad_ij = u_grad_ij.transpose((0, 2, 1)) #(num_fish^2, dx-dy, dfun1-dfun2)
+        #u_grad_ij = u_grad_ij.transpose((0, 2, 1)) #(num_fish^2, dx-dy, dfun1-dfun2)
 
         # calculate gradient of flow velocity
         u_grad_i = u_grad_ij.reshape((SP.num_fish+SP.num_pred, SP.num_fish+SP.num_pred, 2, 2))
@@ -336,16 +338,35 @@ class Simulation:
         return avoidance, pred_attraction
     
     def external_flow(self, params):
+        # flow position offset
         pos = self.spp_pos
         angle = params.external_flow_angle
         flow_dir = np.array([np.cos(angle), np.sin(angle)])
-        t = time.time() % params.external_flow_wavelength
+        if params.external_flow_wavelength == 0 or params.external_flow_velocity == 0:
+            t = 0
+        else:
+            t = time.time() % (params.external_flow_wavelength/params.external_flow_velocity)
         period = 2*np.pi/params.external_flow_wavelength
         offset = flow_dir*t*params.external_flow_velocity
-        U = np.sin(period * (pos - offset) @ flow_dir)
-        U = params.external_flow_mean + params.external_flow_amplitude * U
-        U = U[:, np.newaxis] * flow_dir
-        return U
+        u = period * (pos - offset) @ flow_dir
+        magnitude = params.external_flow_mean + params.external_flow_amplitude * np.sin(u)
+        U = magnitude[:, np.newaxis] * flow_dir
+
+        # flow angular velocity
+        grad_dx = params.external_flow_amplitude * np.cos(u) * period * flow_dir[0]
+        grad_dx = grad_dx[:, np.newaxis] * flow_dir
+
+        grad_dy = params.external_flow_amplitude * np.cos(u) * period * flow_dir[1]
+        grad_dy = grad_dy[:, np.newaxis] * flow_dir
+        
+        grad = np.concatenate((grad_dx[:,:, np.newaxis], grad_dy[:,:, np.newaxis]), axis=2)
+        #grad = grad.transpose((0, 2, 1)) #(num_fish, dx-dy, dfun1-dfun2)
+        e_i = self.spp_dir
+        e_i_orth = np.column_stack((-e_i[:, 1], e_i[:, 0]))
+        omega = (grad @ e_i_orth[:, :, np.newaxis])[:,:,0]
+        omega = (e_i * omega).sum(axis=1)
+
+        return U, omega
     
     def external_flow_intensity_field(self, params):
         x = np.linspace(0, SP.aquarium_size[0], SP.flow_field_size)
@@ -355,7 +376,7 @@ class Simulation:
 
         angle = params.external_flow_angle
         flow_dir = np.array([np.cos(angle), np.sin(angle)])
-        t = time.time() % params.external_flow_wavelength
+        t = time.time() % (params.external_flow_wavelength/params.external_flow_velocity)
         period = 2*np.pi/params.external_flow_wavelength
         offset = flow_dir*t*params.external_flow_velocity
         magnitude = np.sin(period * (pos - offset) @ flow_dir)

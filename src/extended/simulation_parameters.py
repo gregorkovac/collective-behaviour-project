@@ -4,7 +4,7 @@ class StaticParameters:
     num_fish = 100
     num_pred = 0
     sigma = 3.1415/8
-    flow_field_size = 20
+    flow_field_size = 10
 
 class DynamicParameters:
     def __init__(self,
@@ -54,11 +54,11 @@ DP = DynamicParameters(
     pred_attraction= 10,
     collisions = True,
     borders="loop",
-    external_flow_angle = 0,
-    external_flow_mean = 0.5,
-    external_flow_amplitude= 1,
-    external_flow_velocity = 20,
-    external_flow_wavelength = 40
+    external_flow_angle = -0.383,
+    external_flow_mean = 0,
+    external_flow_amplitude= 100,
+    external_flow_velocity = 16,
+    external_flow_wavelength = 200
 )
 
 class ColorPalette:
@@ -73,10 +73,10 @@ class ColorPalette:
     background = [10,5,40,255]#[202, 240, 248, 255]
     flow_hsv = [200, 50, 80]
     flow = [202,240,248,10]#[202, 240, 248, 255]
-    # flow_dir = [245, 144, 37, 60]
-    flow_dir = [66, 142, 255,100]
-    # flow_circle = [245, 144, 37, 60]#[20,60,120,100]#
-    flow_circle = [66, 142, 255,100]
+    #flow_dir = [245, 144, 37, 60]
+    #flow_circle = [245, 144, 37, 60]#[20,60,120,100]#
+    flow_dir = [66, 142, 255,30]
+    flow_circle = [66, 142, 255,30]
     visualizations = [31, 198, 85, 255]
     boids = [230, 95, 50, 255]
     #background = [202/3, 240/4, 248/2, 255]
