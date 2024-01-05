@@ -296,7 +296,6 @@ class GUI:
             #                     p2=[pred_pos[i, 0], pred_pos[i, 1]],
             #                     p1=[pred_pos[i, 0]-0.5*pred_dir[i, 0], pred_pos[i, 1]-0.5*pred_dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("pred_radius")))
 
-
         for i in range(SP.flow_field_size):
             for j in range(SP.flow_field_size):
                 x = self.pos2pixels(i * 1/SP.flow_field_size * SP.aquarium_size[0] + 0.5 / SP.flow_field_size * SP.aquarium_size[0])
@@ -353,8 +352,9 @@ class GUI:
             boids.append(dpg.draw_circle(
                 center=[0, 0],
                 radius=self.pos2pixels(dpg.get_value("pred_radius")),
-                color=ColorPalette.predator,
+                color=ColorPalette.predator_circle,
                 fill=ColorPalette.predator,
+                thickness=self.pos2pixels(0.2),
                 parent="Canvas",
             ))
         return boids

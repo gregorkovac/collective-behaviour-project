@@ -2,8 +2,8 @@ class StaticParameters:
     resolution_height = 720
     pixels_per_meter = 15
     aquarium_size = [60, 60]
-    num_fish = 100
-    num_pred = 2
+    num_fish = 100 # At least 3
+    num_pred = 5
     sigma = 3.1415/8
     flow_field_size = 10
 
@@ -50,17 +50,17 @@ DP = DynamicParameters(
     sigma = 0.103,
     k_v = 0.826,
     k_p = 0.41,
-    vel = 5,
-    pred_vel= 5,
-    pred_avoidance= 0.5,
-    pred_attraction= 10,
+    vel = 4,
+    pred_vel= 6,
+    pred_avoidance= 3,
+    pred_attraction= 20,
     collisions = True,
     borders="loop",
     external_flow_angle = -0.383,
     external_flow_mean = 0,
-    external_flow_amplitude= 100,
+    external_flow_amplitude= 2,
     external_flow_velocity = 16,
-    external_flow_wavelength = 200
+    external_flow_wavelength = 50
 )
 
 class ColorPalette:
@@ -70,6 +70,7 @@ class ColorPalette:
     fish = [245, 144, 37, 255]
     fish_alt = [230, 95, 50, 255]
     predator = [27, 20, 100, 255]
+    predator_circle = [6, 82, 221, 255]#[20, 10, 200, 255]#[200, 100, 80, 255]
     predator_alt = [6, 82, 221, 255]
     predator_eyes = [255, 255, 255, 255]
     background = [10,5,40,255]#[202, 240, 248, 255]

@@ -77,7 +77,8 @@ class Simulation:
 
         # PRED: consider predator avoidance
         if SP.num_pred > 0:
-            avoidance, pred_attraction = self.predator_affect(params)
+            avoidance, avoidance_orth, pred_attraction = self.predator_affect(params)
+            self_avoidance = self.predator_self_avoidance(params)
         #avoidance, pred_attraction = 0, 0
             
         # ALL: consider external flow
@@ -101,10 +102,10 @@ class Simulation:
         
         if SP.num_pred > 0:
             # update fish angle
-            delta_alpha[:SP.num_fish] += avoidance
+            delta_alpha[:SP.num_fish] += avoidance + avoidance_orth
         
             # update predator angle
-            delta_alpha[SP.num_fish:] += pred_attraction
+            delta_alpha[SP.num_fish:] += pred_attraction + self_avoidance
 
         # consider delta time
         delta_alpha *= deltaTime
@@ -202,7 +203,7 @@ class Simulation:
         theta_ij_sign = np.sign(theta_ij_sign[:, 0] - theta_ij_sign[:, 1])
         theta_ij *= theta_ij_sign
 
-        cos = (e_ji * e_i).sum(axis=1)
+        cos = (e_ji * e_j).sum(axis=1)
         cos = np.clip(cos, -1, 1)
         theta_ji = np.arccos(cos)
         theta_ji_sign = e_j * (e_ji[:, [1, 0]])
@@ -254,8 +255,8 @@ class Simulation:
 
     def flow_offset(self, sp, params, delta=1e-6):
         # flow intensity constants
-        I_f_f = np.pi * params.fish_radius**2 * params.k_p / params.vel
-        I_f_p = np.pi * params.pred_radius**2 * params.k_p / params.pred_vel
+        I_f_f = np.pi * params.fish_radius**2 * params.k_p
+        I_f_p = np.pi * params.pred_radius**2 * params.k_p
 
         # flow velocity
         u = self.flow_u(sp, params)
@@ -280,6 +281,8 @@ class Simulation:
         u_grad_i = u_grad_ij.reshape((SP.num_fish+SP.num_pred, SP.num_fish+SP.num_pred, 2, 2))
         u_grad_i[:,:SP.num_fish] *= I_f_f / np.pi
         u_grad_i[:,SP.num_fish:] *= I_f_p / np.pi
+        u_grad_i[:SP.num_fish] /= params.vel
+        u_grad_i[SP.num_fish:] /= params.pred_vel
         # a fish does not affect itself
         np.fill_diagonal(u_grad_i[:,:,0,0], 0)
         np.fill_diagonal(u_grad_i[:,:,0,1], 0)
@@ -298,6 +301,8 @@ class Simulation:
         U = u.reshape((SP.num_fish+SP.num_pred, SP.num_fish+SP.num_pred, 2))
         U[:, :SP.num_fish] *= I_f_f / np.pi
         U[:, SP.num_fish:] *= I_f_p / np.pi
+        U[:SP.num_fish] /= params.vel
+        U[SP.num_fish:] /= params.pred_vel
         # a fish does not affect itself
         np.fill_diagonal(U[:,:,0], 0)
         np.fill_diagonal(U[:,:,1], 0)
@@ -305,6 +310,23 @@ class Simulation:
 
         return U, omega
     
+    def predator_self_avoidance(self, params):
+        sp_pp = self.get_spp_properties(self.pred_pos, self.pred_pos, self.pred_dir, self.pred_dir)
+        e_i = sp_pp.e_i
+        e_ji = sp_pp.e_ji
+        weights = (1 + np.cos(sp_pp.theta_ij)) + 1e-6
+        weights = weights.reshape((SP.num_pred, SP.num_pred))
+        alpha = np.arccos((e_i * e_ji).sum(axis=1))
+        alpha_sign = e_i * (e_ji[:, [1, 0]])
+        alpha_sign = np.sign(alpha_sign[:, 0] - alpha_sign[:, 1])
+        alpha *= alpha_sign
+        avoidance = np.sin(alpha)/((sp_pp.dist/(params.pred_radius*5))**2)
+        avoidance = avoidance.reshape((SP.num_pred, SP.num_pred))
+        avoidance = avoidance * weights
+        avoidance = avoidance.sum(axis=1) / weights.sum(axis=1)
+        avoidance *= np.sqrt(params.pred_vel) * 2
+        return avoidance
+
     # turn away from the predator
     def predator_affect(self, params):
         #--------------------------------------------
@@ -313,12 +335,36 @@ class Simulation:
         sp_fp = self.get_spp_properties(self.pos, self.pred_pos, self.dir, self.pred_dir)
 
         theta_ij_star = np.where(sp_fp.theta_ij > 0, sp_fp.theta_ij - np.pi, sp_fp.theta_ij + np.pi)
-        #--------------------------------------------
 
-        # fish avoidance rotation
-        avoidance = 1/sp_fp.dist * np.sin(theta_ij_star)
+        e_i = sp_fp.e_i
+        e_j = sp_fp.e_j
+        e_j_orth = np.column_stack((-e_j[:, 1], e_j[:, 0]))
+        e_ji = sp_fp.e_ji
+        
         weights = (1 + np.cos(sp_fp.theta_ij)) + 1e-6
         weights = weights.reshape((SP.num_fish, SP.num_pred))
+         
+        #--------------------------------------------
+
+        # fish avoidance rotation - close distance
+        side = e_j * (e_ji[:, [1, 0]])
+        side = np.sign(side[:, 0] - side[:, 1])
+
+        alpha = np.arccos((e_j_orth * e_i).sum(axis=1))
+        alpha_sign = e_i * (e_j_orth[:, [1, 0]])
+        alpha_sign = np.sign(alpha_sign[:, 0] - alpha_sign[:, 1])
+        alpha= np.where(side > 0, alpha, -alpha)
+        alpha *= alpha_sign
+        avoidance_orth = np.sin(alpha)/((sp_fp.dist/(params.fish_radius*4))**2)
+        avoidance_orth = avoidance_orth.reshape((SP.num_fish, SP.num_pred))
+        avoidance_orth = avoidance_orth * weights
+        avoidance_orth = avoidance_orth.sum(axis=1) / weights.sum(axis=1)
+        avoidance_orth = 2 * params.pred_avoidance * avoidance_orth
+        
+        #--------------------------------------------
+
+        # fish avoidance rotation - far distance
+        avoidance = 1/sp_fp.dist * np.sin(theta_ij_star)
         avoidance = avoidance.reshape((SP.num_fish, SP.num_pred))
         avoidance = avoidance * weights
         avoidance = avoidance.sum(axis=1) / weights.sum(axis=1)
@@ -335,7 +381,7 @@ class Simulation:
 
         # print(avoidance.shape, pred_attraction.shape)
 
-        return avoidance, pred_attraction
+        return avoidance, avoidance_orth, pred_attraction
     
     def external_flow(self, params):
         # flow position offset
@@ -367,9 +413,9 @@ class Simulation:
         omega = (e_i * omega).sum(axis=1)
 
         momentum_f = np.pi * params.fish_radius**2 * params.vel
-        F_f = params.k_p / momentum_f
+        F_f = 4 / momentum_f
         momentum_p = np.pi * params.pred_radius**2 * params.pred_vel
-        F_p = params.k_p / momentum_p
+        F_p = 4 / momentum_p
 
         U[:SP.num_fish] *= F_f
         U[SP.num_fish:] *= F_p
