@@ -82,7 +82,7 @@ class Simulation:
             
         # ALL: consider external flow
         external_flow_offset, external_omega = self.external_flow(params)
-        print(external_omega[:5])
+        #print(external_omega[:5])
 
         # UPDATE
         # --------------------------------------------
@@ -93,11 +93,11 @@ class Simulation:
         delta_alpha = np.zeros(SP.num_fish+SP.num_pred)
 
         # update all spp angle with wiener process and flow
-        delta_alpha += external_omega + wiener# + omega + external_omega
+        delta_alpha += wiener + omega + external_omega
         #print(omega[:10])
 
         # update fish angle
-        #delta_alpha[:SP.num_fish] += alignment_attraction
+        delta_alpha[:SP.num_fish] += alignment_attraction
         
         if SP.num_pred > 0:
             # update fish angle
@@ -124,7 +124,7 @@ class Simulation:
         dir[SP.num_fish:] *= params.pred_vel
 
         # update position
-        #self.spp_pos += (dir + flow_offset + external_flow_offset) * deltaTime
+        self.spp_pos += (dir + flow_offset + external_flow_offset) * deltaTime
         #self.spp_pos += (dir + external_flow_offset) * deltaTime
 
         # handle borders
@@ -365,6 +365,17 @@ class Simulation:
         e_i_orth = np.column_stack((-e_i[:, 1], e_i[:, 0]))
         omega = (grad @ e_i_orth[:, :, np.newaxis])[:,:,0]
         omega = (e_i * omega).sum(axis=1)
+
+        momentum_f = np.pi * params.fish_radius**2 * params.vel
+        F_f = params.k_p / momentum_f
+        momentum_p = np.pi * params.pred_radius**2 * params.pred_vel
+        F_p = params.k_p / momentum_p
+
+        U[:SP.num_fish] *= F_f
+        U[SP.num_fish:] *= F_p
+
+        omega[:SP.num_fish] *= F_f
+        omega[SP.num_fish:] *= F_p
 
         return U, omega
     

@@ -2,6 +2,7 @@ import dearpygui.dearpygui as dpg
 from simulation_parameters import *
 import numpy as np
 import colorsys
+import pyautogui as pag
 
 class GUI:
     def __init__(self):
@@ -39,17 +40,7 @@ class GUI:
                 fill=[0, 100, 200, 20],
                 parent="Canvas",
             )"""
-    
-    @staticmethod
-    def on_hover(sender, app_data):
-        print("Hovered over {sender}")
-        return
-        dpg.configure_item(sender, alpha=1)  # fully opaque when hovered
-
-    @staticmethod
-    def on_unhover(sender, app_data):
-        dpg.configure_item(sender, alpha=0.5)  # half transparent when not hovered
-
+        
     def create_gui(self):
         dpg.create_context()
         
@@ -60,7 +51,10 @@ class GUI:
             title="Simulation",
             width=self.pos2pixels(SP.aquarium_size[0])+settings_width,
             height=self.pos2pixels(SP.aquarium_size[1]),
-            resizable=False)
+            resizable=False,
+            #decorated=False,
+            x_pos=0,
+            y_pos=0)
         dpg.setup_dearpygui()
 
         
@@ -73,10 +67,32 @@ class GUI:
                         #autosize=True,
                         no_move=True,
                         no_title_bar=True,
-                        pos=[self.pos2pixels(SP.aquarium_size[0]), 0]):
+                        pos=[self.pos2pixels(SP.aquarium_size[0]), 0],
+                        no_resize=True):
             with dpg.group(horizontal=True):
                 dpg.add_text("Frame rate")
                 dpg.add_text("0", tag="FPS", color=ColorPalette.fish)
+                # add button to exit the program
+                exit_color = [100, 0, 0, 255]
+                exit_color_hover = [200, 50, 50, 255]
+                with dpg.theme(tag="exit_button"):
+                    with dpg.theme_component(dpg.mvButton):
+                        dpg.add_theme_color(dpg.mvThemeCol_Button, exit_color)
+                        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, exit_color)
+                        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, exit_color_hover)
+                        dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 0)
+                        dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
+    
+                # add the button to the right edge of the window
+                """button_size = 30
+                dpg.add_button(
+                    label="X",
+                    tag="ExitButton",
+                    pos=[dpg.get_item_width("Settings") - button_size - 10,10],
+                    width=button_size,
+                    height=button_size,
+                    callback=dpg.stop_dearpygui)
+                dpg.bind_item_theme(dpg.last_item(), "exit_button")"""
             with dpg.group(horizontal=True):
                 dpg.add_text("Phase")
                 dpg.add_text("0", tag="phase", color=ColorPalette.fish)
@@ -153,7 +169,7 @@ class GUI:
                 tag="pred_attraction",
                 default_value=DP.pred_attraction,
                 min_value=0.001,
-                max_value=10.0
+                max_value=100
             )
 
             dpg.add_text("External flow parameters")

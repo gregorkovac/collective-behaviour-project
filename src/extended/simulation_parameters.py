@@ -1,8 +1,9 @@
 class StaticParameters:
+    resolution_height = 720
     pixels_per_meter = 15
     aquarium_size = [60, 60]
     num_fish = 100
-    num_pred = 0
+    num_pred = 2
     sigma = 3.1415/8
     flow_field_size = 10
 
@@ -42,6 +43,7 @@ class DynamicParameters:
         self.external_flow_wavelength = external_flow_wavelength
 
 SP = StaticParameters()
+#SP.pixels_per_meter = int(SP.resolution_height/SP.aquarium_size[1])
 DP = DynamicParameters(
     fish_radius = 0.5,
     pred_radius = 1,
