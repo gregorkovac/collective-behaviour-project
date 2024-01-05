@@ -6,12 +6,13 @@ import time
 np.random.seed(0)
 
 class Response:
-    def __init__(self, pos, dir, pred_pos, pred_dir, flow_dir, external_flow_field):
+    def __init__(self, pos, dir, pred_pos, pred_dir, flow_dir, external_flow_field_magnitude, external_flow_field):
         self.pos = pos
         self.dir = dir
         self.pred_pos = pred_pos
         self.pred_dir = pred_dir
         self.flow_dir = flow_dir
+        self.external_flow_field_magnitude = external_flow_field_magnitude
         self.external_flow_field = external_flow_field
 
 class SPPProperties:
@@ -161,11 +162,22 @@ class Simulation:
         # handle collisions
         if params.collisions:
             self.resolve_collisions(params)
+            self.dists = self.calculate_distances()
+            self.resolve_collisions(params)
         
         # update global order parameters
         self.get_global_order_params(sp, params)
 
-        return Response(self.pos, self.dir, self.pred_pos, self.pred_dir, external_flow_offset, self.external_flow_intensity_field(params))
+        # for visualization of flow field
+        external_flow_field_magnitude, external_flow_field = self.external_flow_intensity_field(params) 
+
+        return Response(self.pos,
+                        self.dir,
+                        self.pred_pos,
+                        self.pred_dir,
+                        external_flow_offset,
+                        external_flow_field_magnitude,
+                        external_flow_field)
     
     @staticmethod
     def get_spp_properties(pos0, pos1, dir0, dir1):
@@ -346,11 +358,12 @@ class Simulation:
         t = time.time() % params.external_flow_wavelength
         period = 2*np.pi/params.external_flow_wavelength
         offset = flow_dir*t*params.external_flow_velocity
-        U = np.sin(period * (pos - offset) @ flow_dir)
-        U = params.external_flow_mean + params.external_flow_amplitude * U
-        U = U[:, np.newaxis] * flow_dir
-
-        return U.reshape((SP.flow_field_size, SP.flow_field_size, 2)).transpose((1, 0, 2))
+        magnitude = np.sin(period * (pos - offset) @ flow_dir)
+        magnitude = params.external_flow_mean + params.external_flow_amplitude * magnitude
+        U = magnitude[:, np.newaxis] * flow_dir
+        magnitude = magnitude.reshape((SP.flow_field_size, SP.flow_field_size)).T
+        U = U.reshape((SP.flow_field_size, SP.flow_field_size, 2)).transpose((1, 0, 2))
+        return magnitude, U 
     
     def get_global_order_params(self, sp, params):
         P = np.linalg.norm(np.mean(self.dir, axis=0))

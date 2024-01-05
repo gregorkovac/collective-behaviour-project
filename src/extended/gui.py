@@ -13,29 +13,32 @@ class GUI:
 
         # set background color
         dpg.set_viewport_clear_color(color=ColorPalette.background)
+
+        self.flow_circle_size=2*self.pos2pixels(SP.aquarium_size[0]/(SP.flow_field_size*2))/2
         
         self.external_flow_field = self.add_flow_field()
         self.external_flow_field_arrows = self.add_flow_field_arrows()
 
-        #self.flow_dir = self.add_flow_dir()
+        self.flow_dir = self.add_flow_dir()
         
         # add boids to the canvas
         self.tails = self.add_tails()
         self.dirs = self.add_dirs()
         self.dirs_2 = self.add_dirs_2()
+        #self.boids = self.add_boids()
 
         self.pred_tails = self.add_pred_tails()
         self.pred_boids = self.add_pred_boid()
         self.pred_dir = self.add_pred_dir()
         self.pred_eyes = self.add_pred_eyes()
 
-        dpg.draw_circle(
+        """dpg.draw_circle(
                 center=[self.pos2pixels(SP.aquarium_size[0])/2, self.pos2pixels(SP.aquarium_size[1])/2],
                 radius=self.pos2pixels(SP.aquarium_size[0]),
-                color=[0, 100, 200, 100],
-                fill=[0, 100, 200, 100],
+                color=[0, 100, 200, 20],
+                fill=[0, 100, 200, 20],
                 parent="Canvas",
-            )
+            )"""
     
     @staticmethod
     def on_hover(sender, app_data):
@@ -247,22 +250,22 @@ class GUI:
         pred_dir = self.pos2pixels(res.pred_dir*2* dpg.get_value("pred_radius"))
         flow_dir = self.pos2pixels(res.flow_dir*2* dpg.get_value("fish_radius"))
         external_flow_field = res.external_flow_field
+        radius = dpg.get_value("fish_radius")
+        radius_px = self.pos2pixels(radius)
 
         # update gui
         for i in range(SP.num_fish):
-            # dpg.configure_item(item=self.boids[i], center=[pos[i, 0], pos[i, 1]], radius=self.pos2pixels(dpg.get_value("fish_radius")))
+            #dpg.configure_item(item=self.boids[i], center=[pos[i, 0], pos[i, 1]], radius=self.pos2pixels(dpg.get_value("fish_radius")))
             dpg.configure_item(item=self.dirs[i],
                                 p2=[pos[i, 0], pos[i, 1]],
-                                p1=[pos[i, 0]-0.5*dir[i, 0], pos[i, 1]-0.5*dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("fish_radius")))
+                                p1=[pos[i, 0]-0.5*dir[i, 0], pos[i, 1]-0.5*dir[i, 1]], thickness=radius_px*1)
             dpg.configure_item(item=self.dirs_2[i],
                                 p2=[pos[i, 0], pos[i, 1]],
-                                p1=[pos[i, 0]+0.5*dir[i, 0], pos[i, 1]+0.5*dir[i, 1]], thickness=self.pos2pixels(dpg.get_value("fish_radius")))
+                                p1=[pos[i, 0]+0.5*dir[i, 0], pos[i, 1]+0.5*dir[i, 1]], thickness=radius_px*1)
             dpg.configure_item(item=self.tails[i],
                                 p2=[(pos[i, 0]-0.71*dir[i,0]), (pos[i, 1]-0.71*dir[i,1])],
-                                p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*self.pos2pixels(dpg.get_value("fish_radius")))
-            #dpg.configure_item(item=self.flow_dir[i],
-            #                    p2=[pos[i, 0], pos[i, 1]],
-            #                    p1=[pos[i, 0]+flow_dir[i, 0], pos[i, 1]+flow_dir[i, 1]], thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")))
+                                p1=[pos[i, 0]-0.7*dir[i, 0], pos[i, 1]-0.7*dir[i, 1]], thickness=0.5*radius_px*1)
+            
                                
         
         for i in range(SP.num_pred):
@@ -295,9 +298,31 @@ class GUI:
                 # if i == 0 and j == 0:
                 #     print(np.linalg.norm(external_flow_field[i, j]))
 
-                flow_color = self.get_flow_color(external_flow_field[i, j])
-                dpg.configure_item(item=self.external_flow_field[i*SP.flow_field_size + j],
-                                   color=flow_color, fill=flow_color)
+                #flow_color = self.get_flow_color(external_flow_field[i, j])
+                #dpg.configure_item(item=self.external_flow_field[i*SP.flow_field_size + j],
+                #                   color=flow_color, fill=flow_color)
+                amplitude = dpg.get_value("external_flow_amplitude")
+                mean = dpg.get_value("external_flow_mean")
+                #flow = np.linalg.norm(external_flow_field[i, j])
+                flow = res.external_flow_field_magnitude[i, j]
+                if amplitude != 0:
+                    size = ((flow - mean) + amplitude) / (2*amplitude)
+                else:
+                    size = 0
+                min_size = 0.05
+                size = min_size + (1-min_size)*size
+                print(flow, amplitude)
+                size = self.flow_circle_size * size
+                dpg.configure_item(item=self.external_flow_field[i*SP.flow_field_size + j], radius=size)
+
+                transparancy = np.clip(np.abs(flow) / 4, 0, 1) * 255
+                transparancy *= 0.5
+                color = ColorPalette.flow_dir
+                color[3] = transparancy
+                dpg.configure_item(item=self.flow_dir[i*SP.flow_field_size + j],
+                                    p2=start,
+                                    p1=end, thickness=0.3*self.pos2pixels(dpg.get_value("fish_radius")),
+                                    color=color)
                 
 
     def update_frameRate(self, deltaTime):
@@ -320,14 +345,15 @@ class GUI:
     
     def add_flow_dir(self):
         dirs = list()
-        for i in range(SP.num_fish):
-            dirs.append(dpg.draw_arrow(
-                p1=[0, 0],
-                p2=[0, 0],
-                thickness=self.pos2pixels(0.1),
-                color=ColorPalette.visualizations,
-                parent="Canvas",
-            ))
+        for i in range(SP.flow_field_size):
+            for j in range(SP.flow_field_size):
+                dirs.append(dpg.draw_arrow(
+                    p1=[0, 0],
+                    p2=[0, 0],
+                    thickness=self.pos2pixels(0.1),
+                    color=ColorPalette.flow_dir,
+                    parent="Canvas",
+                ))
         return dirs
     
     def add_pred_dir(self):
@@ -396,8 +422,8 @@ class GUI:
             boids.append(dpg.draw_circle(
                 center=[0, 0],
                 radius=self.pos2pixels(dpg.get_value("fish_radius")),
-                color=[0, 255, 0, 255],
-                fill=[0, 255, 0, 255],
+                color=ColorPalette.boids,
+                fill=ColorPalette.boids,
                 parent="Canvas",
             ))
         return boids
@@ -455,8 +481,8 @@ class GUI:
 
                 dirs.append(dpg.draw_circle(
                     center = [x, y],
-                    radius=2*self.pos2pixels(SP.aquarium_size[0]/(SP.flow_field_size*2)),
-                    color=ColorPalette.flow,
+                    radius=self.flow_circle_size,
+                    color=ColorPalette.flow_circle,
                     fill=ColorPalette.flow,
                     parent="Canvas",
                 ))
