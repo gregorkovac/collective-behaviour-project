@@ -357,8 +357,8 @@ class Simulation:
         alpha *= alpha_sign
         avoidance_orth = np.sin(alpha)/((sp_fp.dist/(params.fish_radius*4))**2)
         avoidance_orth = avoidance_orth.reshape((SP.num_fish, SP.num_pred))
-        avoidance_orth = avoidance_orth * weights
-        avoidance_orth = avoidance_orth.sum(axis=1) / weights.sum(axis=1)
+        #avoidance_orth = avoidance_orth * weights
+        avoidance_orth = avoidance_orth.sum(axis=1) # / weights.sum(axis=1)
         avoidance_orth = 2 * params.pred_avoidance * avoidance_orth
         
         #--------------------------------------------

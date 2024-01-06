@@ -190,7 +190,7 @@ class GUI:
                 label="flow_amplitude",
                 tag="external_flow_amplitude",
                 default_value=DP.external_flow_amplitude,
-                min_value=0,
+                min_value=0.01,
                 max_value=10
             )
             dpg.add_slider_float(
@@ -320,13 +320,14 @@ class GUI:
                 #flow = np.linalg.norm(external_flow_field[i, j])
                 flow = res.external_flow_field_magnitude[i, j]
                 factor = 1
+                magnitude = mean + amplitude
                 if amplitude == 0:
                     size = 0
                 else:
                     size = ((flow - mean) + amplitude) / (2*amplitude)
                 thershold = 4
-                if amplitude < thershold:
-                    factor = amplitude / thershold
+                if np.abs(magnitude) < thershold:
+                    factor = magnitude / thershold
                 size *= factor
                 min_size = 0.05
                 size = min_size + (1-min_size)*size
