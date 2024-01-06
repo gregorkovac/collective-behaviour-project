@@ -3,3 +3,5 @@
 /src/legacy/__pycache__/
 /src/basic/__pycache__/
 /src/extended/__pycache__/
+
+**/.DS_Store
