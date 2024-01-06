@@ -2,7 +2,6 @@ import dearpygui.dearpygui as dpg
 from simulation_parameters import *
 import numpy as np
 import colorsys
-import pyautogui as pag
 
 class GUI:
     def __init__(self):
@@ -320,10 +319,15 @@ class GUI:
                 mean = dpg.get_value("external_flow_mean")
                 #flow = np.linalg.norm(external_flow_field[i, j])
                 flow = res.external_flow_field_magnitude[i, j]
-                if amplitude != 0:
-                    size = ((flow - mean) + amplitude) / (2*amplitude)
-                else:
+                factor = 1
+                if amplitude == 0:
                     size = 0
+                else:
+                    size = ((flow - mean) + amplitude) / (2*amplitude)
+                thershold = 4
+                if amplitude < thershold:
+                    factor = amplitude / thershold
+                size *= factor
                 min_size = 0.05
                 size = min_size + (1-min_size)*size
                 # print(flow, amplitude)
