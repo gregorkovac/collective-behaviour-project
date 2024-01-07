@@ -7,7 +7,7 @@
 - Gregor Kovač ([@gregorkovac](https://github.com/gregorkovac))
 
 ## Project overview
-This project is based on the paper [[1]](#1). The paper introduces a novel model of fish schooling that incorporates both behavioural rules and hydrodynamic interactions. Our goal is to implement, validate, and potentially extend this model, exploring the implications of hydrodynamic interactions on collective fish behaviour. We plan to add several extensions to this project, such as simulations of different fluids (e.g. fresh water and salty water) to see how they change the behaviour of fish, external water flows of different shapes to see how they change the movement patterns of a school and a predator to see if the fish can exploit hydrodynamics to develop better survival tactics.
+This project is based on the paper [[1]](#1). The paper introduces a novel model of fish schooling that incorporates both behavioural rules and hydrodynamic interactions. In this repository we have provided our implementation of the model, with the addition of predator-like fish, an external water flow and a nice user interface with which we can change the parameters of the model in real time.
 
 A demo of the simulation can be seen [here](https://youtu.be/F9MiLQuiUbI?si=GKoHH3ob-DJ_hvHu).
 
@@ -33,7 +33,7 @@ To run the simulation, follow these steps:
 2. Execute the command: `python main.py`.
 
 
-![Simulation Demo](https://github.com/gregorkovac/collective-fish-behaviour/blob/master/simulation.gif)
+![Simulation Demo](./simulation.gif)
 
 
 ## Milestones
